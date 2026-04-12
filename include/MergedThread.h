@@ -18,6 +18,7 @@
 
 #include <ThreadQueue.h>
 #include <Globals.h>
+#include <BuiltEvent.h>
 #include <Digitisers.h>
 
 
@@ -28,6 +29,17 @@ void BinToThreadedQueue(ThreadSafeQueue<std::vector<Event>>& queue,
 
 void ThreadedQueueToEventTree(ThreadSafeQueue<std::vector<Event>>& queue,
               TTree* outtree,
+              Long64_t tdiff,
+              size_t BUFFER);
+
+void ThreadedQueueToBuiltEventQueue(ThreadSafeQueue<std::vector<Event>>& input_queue,
+              ThreadSafeQueue<BuiltEvent>& output_queue,
+              Long64_t tdiff,
+              size_t BUFFER);
+
+void ThreadedQueueToEventTreeAndBuiltEventQueue(ThreadSafeQueue<std::vector<Event>>& input_queue,
+              TTree* outtree,
+              ThreadSafeQueue<BuiltEvent>& output_queue,
               Long64_t tdiff,
               size_t BUFFER);
 
