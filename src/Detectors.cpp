@@ -1,4 +1,5 @@
 #include <Detectors.h>
+#include <Globals.h>
 
 vector<vector<ChannelCalibration>> DetHit::ChanCal;
 
@@ -75,14 +76,13 @@ void DetHit::SetTOff(UShort_t Mod,UShort_t Chan,Double_t toff){
 ////////////////////////////
 
 
-TRandom3 DetHit::randGen;
 double DetHit::Energy(){
     
     if(fEnergySet)return fEnergy;
     
     array<double, 3> Cal=GetCal(fModule,fChannel);
     
-    fEnergy=(fCharge+randGen.Uniform());
+    fEnergy=(fCharge+gThRand().Uniform());
     fEnergy=Cal[0]+fEnergy*Cal[1]+fEnergy*fEnergy*Cal[2];
     fEnergySet=true;
     return fEnergy;
@@ -149,8 +149,8 @@ TVector3 TelescopeHit::SiliconDetectorPos(UShort_t N_dE,UShort_t N_E,bool Inv_dE
 
     // A function I always include to make visulisation easier when testing.
     if(blur){
-        Xprime+=DetHit::randGen.Uniform(-dStrip*0.45,dStrip*0.45);
-        Yprime+=DetHit::randGen.Uniform(-dStrip*0.45,dStrip*0.45);
+        Xprime+=gThRand().Uniform(-dStrip*0.45,dStrip*0.45);
+        Yprime+=gThRand().Uniform(-dStrip*0.45,dStrip*0.45);
     }
 
     // Create the vector in the prime frame

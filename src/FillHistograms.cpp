@@ -1,14 +1,111 @@
 #include <FillHistograms.h>
 
 #include <ROOT/TTreeProcessorMT.hxx>
+#include <Detectors.h>
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
 
 #include <thread>
 
+namespace {
+
+// Example usage after BuildDetHitCategories(event):
+//   DetHitScratch& detHits = BuildDetHitCategories(event);
+//   for (const auto& hpgeHit : detHits.hpge) {
+//       const double energy = hpgeHit.Energy();
+//       H.mod4_ch_adc->Fill(hpgeHit.Chan(), energy);
+//   }
+struct DetHitScratch {
+    std::vector<DetHit> hpge;
+    std::vector<DetHit> laBr;
+    std::vector<DetHit> siDeltaE;
+    std::vector<DetHit> si;
+    std::vector<DetHit> siDeltaE_B;
+    std::vector<DetHit> si_B;
+    std::vector<DetHit> solar;
+    std::vector<DetHit> dice;
+    std::vector<DetHit> cdte;
+};
+
+DetHitScratch& DetHitScratchBuffer()
+{
+    thread_local DetHitScratch scratch;
+    return scratch;
+}
+
+DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
+{
+    DetHitScratch& scratch = DetHitScratchBuffer();
+
+    scratch.hpge.clear();
+    scratch.laBr.clear();
+    scratch.siDeltaE.clear();
+    scratch.si.clear();
+    scratch.siDeltaE_B.clear();
+    scratch.si_B.clear();
+    scratch.solar.clear();
+    scratch.dice.clear();
+    scratch.cdte.clear();
+
+    scratch.hpge.reserve(event.Size());
+    scratch.laBr.reserve(event.Size());
+    scratch.siDeltaE.reserve(event.Size());
+    scratch.si.reserve(event.Size());
+    scratch.siDeltaE_B.reserve(event.Size());
+    scratch.si_B.reserve(event.Size());
+    scratch.solar.reserve(event.Size());
+    scratch.dice.reserve(event.Size());
+    scratch.cdte.reserve(event.Size());
+
+    for (size_t i = 0; i < event.Size(); ++i) {
+        const UShort_t mod = event.Mod[i];
+        const UShort_t ch = event.Ch[i];
+
+        switch (DetHit::GetDetType(mod, ch)) {
+            case DetHit::HPGe:
+                scratch.hpge.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::LaBr:
+                scratch.laBr.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::SiDeltaE:
+                scratch.siDeltaE.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::Si:
+                scratch.si.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::SiDeltaE_B:
+                scratch.siDeltaE_B.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::Si_B:
+                scratch.si_B.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::Solar:
+                scratch.solar.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::Dice:
+                scratch.dice.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::CdTe:
+                scratch.cdte.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            default:
+                break;
+        }
+    }
+
+    return scratch;
+}
+
+}
+
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 {
+    // DetHitScratch& detHits = BuildDetHitCategories(event);
+    // auto& hpge = detHits.hpge;
+    // auto& si = detHits.si;
+
     for (size_t i = 0; i < event.Size(); ++i) {
         H.mod_ch_adc_ts->Fill(event.Mod[i], event.Ch[i], event.Adc[i]);
 
@@ -76,6 +173,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             H.mod4_ch_adc->Fill(event.Ch[i], event.Adc[i]);
         }
     }
+
 }
 
 void FillHistograms(ThreadedHistogramSet& histograms, const BuiltEventView& event)

@@ -3,6 +3,10 @@
 
 #include <cstddef>  
 #include <Rtypes.h>
+#include <TRandom3.h>
+
+#include <functional>
+#include <thread>
 
 constexpr size_t gBuildBuffDefaultSize=2'000'000;
 constexpr size_t gBinChunkDefaultSize=100;
@@ -54,6 +58,12 @@ inline UShort_t SafeTsDiff(Long64_t ts, Long64_t firstTs)
     }
     
     return (UShort_t)diff;
+}
+
+inline TRandom3& gThRand()
+{
+    thread_local TRandom3 rng(static_cast<UInt_t>(std::hash<std::thread::id>{}(std::this_thread::get_id())));
+    return rng;
 }
 
 #endif

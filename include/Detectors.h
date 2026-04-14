@@ -1,10 +1,9 @@
 #ifndef JAEASortDetectors
 #define JAEASortDetectors
 
-#include <TRandom3.h>
 #include <TVector3.h>
-#include <vector>
 #include <array>
+#include <vector>
 
 
 using namespace std;
@@ -91,7 +90,6 @@ class DetHit{
     UShort_t Index()const {return GetIndex(fModule,fChannel);}
     Double_t TOff()const {return GetTOff(fModule,fChannel);}
     
-    static TRandom3 randGen;
 };
 
 
