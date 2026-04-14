@@ -1,6 +1,181 @@
 #include <IO.h>
 #include <Detectors.h>
 
+#include <algorithm>
+#include <regex>
+#include <unordered_set>
+
+namespace {
+
+bool EndsWith(const std::string& value, const std::string& suffix)
+{
+    return value.size() >= suffix.size()
+        && value.compare(value.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool IsRootPath(const std::string& value)
+{
+    return EndsWith(value, ".root");
+}
+
+bool IsInfoPath(const std::string& value)
+{
+    return EndsWith(value, ".info");
+}
+
+bool IsCalibrationPath(const std::string& value)
+{
+    return EndsWith(value, ".cal");
+}
+
+bool HasWildcard(const std::string& value)
+{
+    return value.find('*') != std::string::npos;
+}
+
+std::string NormalizePath(const std::filesystem::path& path)
+{
+    try {
+        return std::filesystem::weakly_canonical(path).string();
+    } catch (...) {
+        return std::filesystem::absolute(path).lexically_normal().string();
+    }
+}
+
+bool IsSplitRootFile(const std::filesystem::path& path)
+{
+    static const std::regex splitPattern(".*_[0-9]+$");
+    return std::regex_match(path.stem().string(), splitPattern);
+}
+
+std::string WildcardToRegex(const std::string& pattern)
+{
+    std::string regexPattern;
+    regexPattern.reserve(pattern.size() * 2);
+    regexPattern += '^';
+
+    for (char c : pattern) {
+        switch (c) {
+            case '*':
+                regexPattern += ".*";
+                break;
+            case '.':
+            case '(':
+            case ')':
+            case '[':
+            case ']':
+            case '{':
+            case '}':
+            case '+':
+            case '?':
+            case '^':
+            case '$':
+            case '|':
+            case '\\':
+                regexPattern += '\\';
+                regexPattern += c;
+                break;
+            default:
+                regexPattern += c;
+                break;
+        }
+    }
+
+    regexPattern += '$';
+    return regexPattern;
+}
+
+std::vector<TString> ExpandSplitRootFamily(const std::filesystem::path& inputPath)
+{
+    std::vector<TString> files;
+
+    if (!std::filesystem::exists(inputPath) || !IsRootPath(inputPath.string())) {
+        return files;
+    }
+
+    files.push_back(TString(NormalizePath(inputPath)));
+
+    if (IsSplitRootFile(inputPath)) {
+        return files;
+    }
+
+    const std::filesystem::path parent = inputPath.parent_path();
+    const std::string stem = inputPath.stem().string();
+
+    for (int i = 1;; ++i) {
+        const std::filesystem::path splitPath = parent / (stem + "_" + std::to_string(i) + ".root");
+        if (!std::filesystem::exists(splitPath)) {
+            break;
+        }
+        files.push_back(TString(NormalizePath(splitPath)));
+    }
+
+    return files;
+}
+
+std::vector<TString> ResolveRootInputSpec(const TString& inputSpec)
+{
+    std::vector<TString> files;
+    const std::string spec = inputSpec.Data();
+
+    if (!IsRootPath(spec)) {
+        return files;
+    }
+
+    if (!HasWildcard(spec)) {
+        return ExpandSplitRootFamily(std::filesystem::path(spec));
+    }
+
+    const std::filesystem::path specPath(spec);
+    std::filesystem::path directory = specPath.parent_path();
+    if (directory.empty()) {
+        directory = ".";
+    }
+
+    if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+        std::cerr << std::endl << "Cannot open directory: " << directory.string() << std::flush;
+        return files;
+    }
+
+    const std::regex pattern(WildcardToRegex(specPath.filename().string()));
+    std::vector<std::filesystem::path> matches;
+
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        const std::filesystem::path filePath = entry.path();
+        if (!IsRootPath(filePath.string())) {
+            continue;
+        }
+
+        if (std::regex_match(filePath.filename().string(), pattern)) {
+            matches.push_back(filePath);
+        }
+    }
+
+    std::sort(matches.begin(), matches.end());
+
+    for (const auto& match : matches) {
+        const std::vector<TString> expanded = ExpandSplitRootFamily(match);
+        files.insert(files.end(), expanded.begin(), expanded.end());
+    }
+
+    return files;
+}
+
+void CloneCutGates(const std::vector<TCutG*>& source, std::vector<TCutG*>& target)
+{
+    target.clear();
+    target.reserve(source.size());
+    for (TCutG* gate : source) {
+        target.push_back(gate ? static_cast<TCutG*>(gate->Clone()) : nullptr);
+    }
+}
+
+}
+
 // =========================
 // File list helper
 // =========================
@@ -24,31 +199,6 @@ std::vector<TString> GetTreeSplitFileList(TString base)
     
     return files;
 }
-
-// =========================
-// File list helper
-// =========================
-std::vector<TString> GetFileList(TString base)
-{
-    std::vector<TString> files;
-    
-    files.push_back(base);
-    
-    TString name = base;
-    name.ReplaceAll(".root","");
-    
-    for(int i=1;;i++){
-        TString fname;
-        fname.Form("%s_%d.root", name.Data(), i);
-        
-        if (gSystem->AccessPathName(fname)) break;
-        
-        files.push_back(fname);
-    }
-    
-    return files;
-}
-
 
 void JAEASortIO::WriteCalibration(string filename){
     std::ofstream outputFile(filename);
@@ -83,6 +233,9 @@ void JAEASortIO::ReadCalibration(string filename){
 
     std::string line;
     while (std::getline(inputFile, line)) {
+        if (line.empty()) {
+            continue;
+        }
         std::istringstream iss(line);
         
         if(line[0]=='#')continue;
@@ -147,9 +300,8 @@ JAEASortIO::JAEASortIO(int argc, char *argv[]):JAEASortIO(){
     // Itterate over command line inputs, skipping argument 0 which is the program
 	for(int i=1;i<argc;i++){
 		string inpstr(argv[i]);
-		TString Tinpstr(argv[i]);
         // If argument is an info file process it as if it was command line input
-		if(Tinpstr.EndsWith(".info")){
+		if(IsInfoPath(inpstr)){
             
             ReadInfoFile(inpstr);
 		}else{
@@ -161,6 +313,49 @@ JAEASortIO::JAEASortIO(int argc, char *argv[]):JAEASortIO(){
     ProcessInputs();
 };
 
+JAEASortIO::JAEASortIO(const JAEASortIO& obj)
+{
+    store = obj.store;
+    NumericInputs = obj.NumericInputs;
+    NumericInputNames = obj.NumericInputNames;
+    InputRootSpecs = obj.InputRootSpecs;
+    BinInputStem = obj.BinInputStem;
+    EventInputFiles = obj.EventInputFiles;
+    EventTreeOutFilename = obj.EventTreeOutFilename;
+    HistogramOutFilename = obj.HistogramOutFilename;
+    Entries = obj.Entries;
+    GateID = obj.GateID;
+    ShowManual = obj.ShowManual;
+    CloneCutGates(obj.CutGates, CutGates);
+    Rewind();
+}
+
+JAEASortIO& JAEASortIO::operator=(const JAEASortIO& obj)
+{
+    if (this == &obj) {
+        return *this;
+    }
+
+    for (auto g : CutGates) {
+        delete g;
+    }
+
+    store = obj.store;
+    NumericInputs = obj.NumericInputs;
+    NumericInputNames = obj.NumericInputNames;
+    InputRootSpecs = obj.InputRootSpecs;
+    BinInputStem = obj.BinInputStem;
+    EventInputFiles = obj.EventInputFiles;
+    EventTreeOutFilename = obj.EventTreeOutFilename;
+    HistogramOutFilename = obj.HistogramOutFilename;
+    Entries = obj.Entries;
+    GateID = obj.GateID;
+    ShowManual = obj.ShowManual;
+    CloneCutGates(obj.CutGates, CutGates);
+    Rewind();
+    return *this;
+}
+
 
 void JAEASortIO::ReadInfoFile(string filename){
     ifstream infofile(filename);
@@ -170,6 +365,9 @@ void JAEASortIO::ReadInfoFile(string filename){
         
         // Doing line by line so that comment lines can be skipped
         while(getline(infofile, fileline, '\n')){
+            if (fileline.empty()) {
+                continue;
+            }
             if(!(fileline[0]=='#')){ //skip comments
                 
                 // Because we are reading line by line have to cast back up to a stream
@@ -178,8 +376,8 @@ void JAEASortIO::ReadInfoFile(string filename){
                 string sep;
                 while(ss>>sep){
                     //info files can be recursive
-                    if(sep.find(".info")==sep.size()-5&&sep.size()>6){
-                        ReadInfoFile(fileline);
+                    if(IsInfoPath(sep)){
+                        ReadInfoFile(sep);
                     }else{
                         store.push_back(sep);
                     }
@@ -192,91 +390,91 @@ void JAEASortIO::ReadInfoFile(string filename){
     }	
 }
 
+void JAEASortIO::PrintManual(std::ostream& os)
+{
+    os << "JAEASortIO input syntax\n"
+       << "  bin run input:\n"
+       << "    -bin /path/to/runprefix\n"
+       << "    or provide one non-.root argument to use as the digitiser run stem.\n"
+       << "  event tree output:\n"
+       << "    -tree events.root\n"
+       << "  histogram tree input:\n"
+       << "    file.root\n"
+       << "    '/path/run*.root'\n"
+       << "  histogram output:\n"
+       << "    -hist hist.root\n"
+       << "  calibration:\n"
+       << "    calib.cal\n"
+       << "  help:\n"
+       << "    -man\n"
+       << "Notes:\n"
+       << "  If an input includes file.root, matching split files file_1.root, file_2.root, ... are added automatically.\n"
+       << "  Duplicate ROOT inputs are removed after wildcard expansion and split-file discovery.\n";
+}
+
+void JAEASortIO::AddInputRootSpec(const TString& inputSpec)
+{
+    if (IsRootPath(inputSpec.Data())) {
+        InputRootSpecs.push_back(inputSpec);
+    }
+}
+
+void JAEASortIO::ResolveInputFiles()
+{
+    EventInputFiles.clear();
+
+    std::unordered_set<std::string> seenFiles;
+    for (const auto& inputSpec : InputRootSpecs) {
+        const std::vector<TString> resolved = ResolveRootInputSpec(inputSpec);
+        for (const auto& fileName : resolved) {
+            const std::string normalized = fileName.Data();
+            if (seenFiles.insert(normalized).second) {
+                EventInputFiles.push_back(fileName);
+            }
+        }
+    }
+
+}
+
 void JAEASortIO::ProcessInputs(){
-    vector<string> inputpattern;
-    OutFilename="Out.root";
+    InputRootSpecs.clear();
+    EventInputFiles.clear();
+    BinInputStem = "";
+    EventTreeOutFilename = "";
+    HistogramOutFilename = "";
     
     string str;
     while(*this>>str){
         
         // If a cal file, read it in to DetHit class
-        if(str.find(".cal")==str.size()-4&&str.size()>4){
+        if(IsCalibrationPath(str)){
             ReadCalibration(str);
-        }else if(str.find(".root")==str.size()-5&&str.size()>6){ // If a root file name
-            
-            if(str.find("**")<str.size()){
-                // Double wild card to give input pattern
-                inputpattern.push_back(str);
+        }else if(IsRootPath(str)){ // If a root file name
+            if(HasWildcard(str) || std::filesystem::exists(str)){
+                AddInputRootSpec(str);
             }else{
-                //No wild card, direct file specification
-                
-                if(std::filesystem::exists(str)){//Exists, must be an input
-                    TFile filetest(str.c_str());
-                    if(filetest.IsOpen()){
-                        filetest.Close();
-                        inputpattern.push_back(str);
-                    }
-                }else{//Doesnt exist, must be the output
-                    OutFilename=str;
-                }
+                std::cout<<std::endl<<"UNKNOWN ROOT INPUT "<<str<<" (use -tree or -hist for outputs)"<<std::flush;
             }
         }else if(str[0]=='-'){
             // A special argument, read the next item out of order of normal processing loop
             ProcessOption(str);
             
         }else{
-            cout<<endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<flush;
+            if(BinInputStem.Length()==0){
+                BinInputStem = str;
+            }else{
+                cout<<endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<flush;
+            }
         }
     }
-    
-    InputFiles.clear();
-    for(auto str : inputpattern){
-        
-        // Because it could be a mix of exact files and patters, check again
-        
-        if(str.find("**")<str.size()){
-            size_t pos = str.find("**");
-            string prefix=str.substr(0, pos);
-            string suffix=str.substr(pos + 2);
-                        
-            string path="";
-            if(!prefix.find("/")<prefix.size()){
-                path=prefix.substr(0,prefix.rfind("/"));
-                prefix=prefix.substr(prefix.rfind("/")+1);
-            }
-            
-            void* dir = gSystem->OpenDirectory(path.c_str());
-            if (!dir) {
-                std::cerr<< std::endl << "Cannot open directory: " << path<< std::flush; 
-                continue;
-            }
 
-            const char* entry;
+    ResolveInputFiles();
 
-            std::vector<TString> DirectoryItems;
-            while ((entry = gSystem->GetDirEntry(dir))) {
-                DirectoryItems.emplace_back(entry);
-            }
-            std::sort(DirectoryItems.begin(), DirectoryItems.end());
-                
-            for(auto fileName : DirectoryItems){
-                
-                if (fileName.BeginsWith(prefix.c_str()) && fileName.EndsWith(suffix.c_str())) {
-                    TString fullPath = TString(path) + "/" + fileName;
-                    TFile* file = TFile::Open(fullPath);
-                    if (file && file->IsOpen()) {
-                        file->Close();
-                        InputFiles.push_back(fullPath);
-                    }
-                }
-            }
-
-            gSystem->FreeDirectory(dir);
-                
-        }else{
-            InputFiles.push_back(str);
-           // str is an exact file, the existence of which was already checked
-        }
+    if (BinInputStem.Length() > 0 && EventTreeOutFilename.Length() == 0) {
+        EventTreeOutFilename = "Out.root";
+    }
+    if (EventInputFiles.size() > 0 && HistogramOutFilename.Length() == 0) {
+        HistogramOutFilename = "Out.root";
     }
 }
 
@@ -297,14 +495,25 @@ void JAEASortIO::ProcessOption(TString str){
         // A special argument, read the next item out of order of normal processing loop
 
 // Contains 
-        if(str.EqualTo("-o")||str.EqualTo("-O")){// Overwrite an existing output file, next argument is file name
+        if(str.EqualTo("-man") || str.EqualTo("--man") || str.EqualTo("-h") || str.EqualTo("--help")){
+            ShowManual = true;
+            PrintManual();
+        }else if(str.EqualTo("-bin")){
             *this>>str;
-            if(str.EndsWith(".root")){ // If a root file name
-                OutFilename=str;
+            BinInputStem = str;
+        }else if(str.EqualTo("-tree")){
+            *this>>str;
+            if(IsRootPath(str.Data())){ // If a root file name
+                EventTreeOutFilename=str;
+            }
+        }else if(str.EqualTo("-hist")){
+            *this>>str;
+            if(IsRootPath(str.Data())){ // If a root file name
+                HistogramOutFilename=str;
             }
         }else if(str.EqualTo("-ID")){// Load a particle ID gate, next argument file containing name
             *this>>str;
-            if(str.EndsWith(".root")){ // If a root file name
+            if(IsRootPath(str.Data())){ // If a root file name
                 
                     
                 TFile *file = TFile::Open(str, "READ");
@@ -361,18 +570,18 @@ void JAEASortIO::Rewind(){
 	
 }
 
-string JAEASortIO::ReturnFind(string compare){
+string JAEASortIO::ReturnFind(string compare) const{
 	for(int i=0;i<store.size();i++){string str=store[i];
 		if(str.find(compare)<str.size())return str;
 	}	
 	return "";
 }
 
-bool JAEASortIO::IsPresent(string compare){
+bool JAEASortIO::IsPresent(string compare) const{
 	return ReturnFind(compare).size();
 }
 
-double JAEASortIO::Next(string compare){
+double JAEASortIO::Next(string compare) const{
 	for(int i=0;i<store.size()-1;i++){string str=store[i];
 		if(str.find(compare)<str.size()){
 			stringstream ss;ss<<store[i+1];
@@ -383,7 +592,7 @@ double JAEASortIO::Next(string compare){
 	return 0;
 }
 
-string JAEASortIO::NextString(string compare){
+string JAEASortIO::NextString(string compare) const{
 	for(int i=0;i<store.size()-1;i++){string str=store[i];
 		if(str.find(compare)<str.size()){
 			return store[i+1];
@@ -393,7 +602,7 @@ string JAEASortIO::NextString(string compare){
 }
 
 
-void JAEASortIO::NextTwo(string compare,double& ret,double& retB){
+void JAEASortIO::NextTwo(string compare,double& ret,double& retB) const{
 	for(int i=0;i<store.size()-2;i++){
 		string str=store[i];
 		if(str.find(compare)<str.size()){
@@ -409,7 +618,7 @@ TChain* JAEASortIO::DataTree(TString TreeName){
     Entries.clear();
     
 	TChain* DataChain = new TChain(TreeName,TreeName);
-    for(auto FileName : InputFiles){
+    for(auto FileName : EventInputFiles){
         
         TFile filetest(FileName); // Shouldnt be needed as we already tests 
         if(filetest.IsOpen()){
@@ -426,13 +635,13 @@ TChain* JAEASortIO::DataTree(TString TreeName){
 }
 
 
-bool JAEASortIO::TestInput(TString InputName){
+bool JAEASortIO::TestInput(TString InputName) const{
     for(auto& s : NumericInputNames){
         if(s==InputName)return true;
     }
     return false;
 }
-double JAEASortIO::GetInput(TString InputName){
+double JAEASortIO::GetInput(TString InputName) const{
     for(unsigned int i=0;i<NumericInputNames.size();i++){
         if(NumericInputNames[i]==InputName)return NumericInputs[i];
     }

@@ -16,6 +16,7 @@
 #include <TKey.h>
 #include <TCutG.h>
 #include <filesystem>
+#include <ostream>
 
 using namespace std;
 
@@ -26,19 +27,26 @@ class JAEASortIO{
     public:
     static void WriteCalibration(string filename="cal.txt");
     static void ReadCalibration(string filename="cal.txt");
+    static void PrintManual(std::ostream& os = std::cout);
     
     private:
 	vector<string> store;
     vector<double> NumericInputs;
     vector<TString> NumericInputNames;
+    vector<TString> InputRootSpecs;
+
+    void AddInputRootSpec(const TString& inputSpec);
+    void ResolveInputFiles();
 	
     public:
-        
-    vector<TString> InputFiles;
-    TString OutFilename;
+    TString BinInputStem;
+    vector<TString> EventInputFiles;
+    TString EventTreeOutFilename;
+    TString HistogramOutFilename;
     vector<long> Entries;
     vector<TCutG*> CutGates;
     vector<UShort_t> GateID;
+    bool ShowManual = false;
 	
 
 	stringstream infostream;
@@ -50,25 +58,22 @@ class JAEASortIO{
 		for(auto g : CutGates)delete g;
 	};
 	
-	JAEASortIO( const JAEASortIO &obj){	store=obj.store;Rewind();}//copy constructor
-	JAEASortIO& operator=(const JAEASortIO& obj){//assignment operator
-		store=obj.store;Rewind();
-		return *this;
-	}
+	JAEASortIO( const JAEASortIO &obj);
+	JAEASortIO& operator=(const JAEASortIO& obj);
 	
 	void ReadInfoFile(string filename);
 	void ProcessInputs();
 	void ProcessOption(TString str);
 
-	string ReturnFind(string compare);
-	bool IsPresent(string compare);
-	double Next(string compare);
-	string NextString(string compare);
-	void Next(string compare,double &ret){ret=Next(compare);}
-	void NextTwo(string compare,double& ret,double& retB);
+	string ReturnFind(string compare) const;
+	bool IsPresent(string compare) const;
+	double Next(string compare) const;
+	string NextString(string compare) const;
+	void Next(string compare,double &ret) const {ret=Next(compare);}
+	void NextTwo(string compare,double& ret,double& retB) const;
     
-    bool TestInput(TString InputName);
-    double GetInput(TString InputName);
+    bool TestInput(TString InputName) const;
+    double GetInput(TString InputName) const;
 	
     TChain* DataTree(TString TreeName);
 
