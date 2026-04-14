@@ -94,6 +94,37 @@ public:
         }
     }
 
+    HistogramRefs ResolveHistogramRefs()
+    {
+        HistogramRefs refs;
+
+        refs.siall = siall.Get().get();
+        refs.sidt = sidt.Get().get();
+        refs.ring_sector_E = ring_sector_E.Get().get();
+        refs.ring_sector_E_reduced = ring_sector_E_reduced.Get().get();
+        refs.pmpt_ring_sector_E = pmpt_ring_sector_E.Get().get();
+        refs.pmpt_ring_sector_E_reduced = pmpt_ring_sector_E_reduced.Get().get();
+        refs.hSect_CdTe_dT = hSect_CdTe_dT.Get().get();
+        refs.hSect_HPGe_dT = hSect_HPGe_dT.Get().get();
+        refs.hSect_CdTe_dT_ADC = hSect_CdTe_dT_ADC.Get().get();
+        refs.hSect_HPGe_dT_ADC = hSect_HPGe_dT_ADC.Get().get();
+        refs.hRingRing = hRingRing.Get().get();
+        refs.hSectSect = hSectSect.Get().get();
+        refs.hSectE_divRingE = hSectE_divRingE.Get().get();
+        refs.mod1_ch_adc = mod1_ch_adc.Get().get();
+        refs.mod2_ch_adc = mod2_ch_adc.Get().get();
+        refs.mod3_ch_adc = mod3_ch_adc.Get().get();
+        refs.mod4_ch_adc = mod4_ch_adc.Get().get();
+        refs.mod_ch_adc_ts = mod_ch_adc_ts.Get().get();
+        refs.sector_ring_energy_double = sector_ring_energy_double.Get().get();
+
+        for (int i = 0; i < 4; ++i) {
+            refs.ESumPart[i] = ESumPart[i]->Get().get();
+        }
+
+        return refs;
+    }
+
     template <typename HistT>
     void Register(TThreadedObject<HistT>& histogram, const TString& directory = "")
     {
@@ -139,37 +170,6 @@ public:
         if (previousDirectory) {
             previousDirectory->cd();
         }
-    }
-
-    HistogramRefs ResolveHistogramRefs()
-    {
-        HistogramRefs refs;
-
-        refs.siall = siall.Get().get();
-        refs.sidt = sidt.Get().get();
-        refs.ring_sector_E = ring_sector_E.Get().get();
-        refs.ring_sector_E_reduced = ring_sector_E_reduced.Get().get();
-        refs.pmpt_ring_sector_E = pmpt_ring_sector_E.Get().get();
-        refs.pmpt_ring_sector_E_reduced = pmpt_ring_sector_E_reduced.Get().get();
-        refs.hSect_CdTe_dT = hSect_CdTe_dT.Get().get();
-        refs.hSect_HPGe_dT = hSect_HPGe_dT.Get().get();
-        refs.hSect_CdTe_dT_ADC = hSect_CdTe_dT_ADC.Get().get();
-        refs.hSect_HPGe_dT_ADC = hSect_HPGe_dT_ADC.Get().get();
-        refs.hRingRing = hRingRing.Get().get();
-        refs.hSectSect = hSectSect.Get().get();
-        refs.hSectE_divRingE = hSectE_divRingE.Get().get();
-        refs.mod1_ch_adc = mod1_ch_adc.Get().get();
-        refs.mod2_ch_adc = mod2_ch_adc.Get().get();
-        refs.mod3_ch_adc = mod3_ch_adc.Get().get();
-        refs.mod4_ch_adc = mod4_ch_adc.Get().get();
-        refs.mod_ch_adc_ts = mod_ch_adc_ts.Get().get();
-        refs.sector_ring_energy_double = sector_ring_energy_double.Get().get();
-
-        for (int i = 0; i < 4; ++i) {
-            refs.ESumPart[i] = ESumPart[i]->Get().get();
-        }
-
-        return refs;
     }
 
 private:
