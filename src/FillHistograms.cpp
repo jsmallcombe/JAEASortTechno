@@ -9,13 +9,6 @@
 #include <thread>
 
 namespace {
-
-// Example usage after BuildDetHitCategories(event):
-//   DetHitScratch& detHits = BuildDetHitCategories(event);
-//   for (const auto& hpgeHit : detHits.hpge) {
-//       const double energy = hpgeHit.Energy();
-//       H.mod4_ch_adc->Fill(hpgeHit.Chan(), energy);
-//   }
 struct DetHitScratch {
     std::vector<DetHit> hpge;
     std::vector<DetHit> laBr;

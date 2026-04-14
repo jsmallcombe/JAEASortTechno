@@ -28,6 +28,7 @@ class DetHit{
     static vector<vector<ChannelCalibration>> ChanCal;
     
     static void ExpandCal(UShort_t Mod,UShort_t Chan);
+    static const ChannelCalibration& FindCalibration(UShort_t Mod,UShort_t Chan);
     
     public:
         

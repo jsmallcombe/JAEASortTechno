@@ -2,6 +2,9 @@
 #include <Globals.h>
 
 vector<vector<ChannelCalibration>> DetHit::ChanCal;
+namespace {
+const ChannelCalibration gDefaultCalibration{};
+}
 
 void DetHit::ExpandCal(UShort_t Mod,UShort_t Chan){
     // Ensure the outer vector has enough elements
@@ -14,6 +17,17 @@ void DetHit::ExpandCal(UShort_t Mod,UShort_t Chan){
     }
 }
 
+const ChannelCalibration& DetHit::FindCalibration(UShort_t Mod, UShort_t Chan)
+{
+    if (Mod >= ChanCal.size()) {
+        return gDefaultCalibration;
+    }
+    if (Chan >= ChanCal[Mod].size()) {
+        return gDefaultCalibration;
+    }
+    return ChanCal[Mod][Chan];
+}
+
 void DetHit::SetCalibrationParam(UShort_t Mod,UShort_t Chan,double Pol0, double Pol1,double Pol2){
     ExpandCal(Mod,Chan); 
     ChanCal[Mod][Chan].p0=Pol0;
@@ -22,8 +36,8 @@ void DetHit::SetCalibrationParam(UShort_t Mod,UShort_t Chan,double Pol0, double 
 }
 
 std::array<double, 3> DetHit::GetCal(UShort_t Mod, UShort_t Chan) {
-    ExpandCal(Mod,Chan); 
-    return {ChanCal[Mod][Chan].p0,ChanCal[Mod][Chan].p1,ChanCal[Mod][Chan].p2};
+    const ChannelCalibration& cal = FindCalibration(Mod, Chan);
+    return {cal.p0, cal.p1, cal.p2};
 }
 
 void DetHit::SetCalibrationDirect(UShort_t DetT,UShort_t Index,double Pol0, double Pol1,double Pol2){
@@ -43,8 +57,7 @@ void DetHit::SetCalibrationDirect(UShort_t DetT,UShort_t Index,double Pol0, doub
 
 
 UShort_t DetHit::GetDetType(UShort_t Mod,UShort_t Chan){
-    ExpandCal(Mod,Chan); 
-    return ChanCal[Mod][Chan].DetectorType;
+    return FindCalibration(Mod, Chan).DetectorType;
 }
 
 void DetHit::SetDetType(UShort_t Mod,UShort_t Chan,UShort_t DetT){
@@ -53,8 +66,7 @@ void DetHit::SetDetType(UShort_t Mod,UShort_t Chan,UShort_t DetT){
 }
 
 UShort_t DetHit::GetIndex(UShort_t Mod,UShort_t Chan){
-    ExpandCal(Mod,Chan); 
-    return ChanCal[Mod][Chan].Index;
+    return FindCalibration(Mod, Chan).Index;
 }
 
 void DetHit::SetIndex(UShort_t Mod,UShort_t Chan,UShort_t Index){
@@ -63,8 +75,7 @@ void DetHit::SetIndex(UShort_t Mod,UShort_t Chan,UShort_t Index){
 }
 
 Double_t DetHit::GetTOff(UShort_t Mod,UShort_t Chan){
-    ExpandCal(Mod,Chan); 
-    return ChanCal[Mod][Chan].TOff;
+    return FindCalibration(Mod, Chan).TOff;
 }
 
 void DetHit::SetTOff(UShort_t Mod,UShort_t Chan,Double_t toff){

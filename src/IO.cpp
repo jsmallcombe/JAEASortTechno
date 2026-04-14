@@ -194,24 +194,19 @@ void JAEASortIO::ReadInfoFile(string filename){
 
 void JAEASortIO::ProcessInputs(){
     vector<string> inputpattern;
-    vector<string> runs;
-    string outpattern="";
     OutFilename="Out.root";
     
     string str;
     while(*this>>str){
         
         // If a cal file, read it in to DetHit class
-        if(str.find(".cal")==str.size()-4&&str.size()>5){
+        if(str.find(".cal")==str.size()-4&&str.size()>4){
             ReadCalibration(str);
         }else if(str.find(".root")==str.size()-5&&str.size()>6){ // If a root file name
             
             if(str.find("**")<str.size()){
                 // Double wild card to give input pattern
                 inputpattern.push_back(str);
-            }else if(str.find("*")<str.size()){
-                // Single wild card to give output pattern
-                outpattern=str;
             }else{
                 //No wild card, direct file specification
                 
@@ -225,98 +220,58 @@ void JAEASortIO::ProcessInputs(){
                     OutFilename=str;
                 }
             }
-        }else if(str.find("Mode")<str.size()){
-            // Set the program mode i.e. sort or calibrat            
         }else if(str[0]=='-'){
             // A special argument, read the next item out of order of normal processing loop
-            
             ProcessOption(str);
             
         }else{
-            int run;
-            if(stringToInt(str,run)){
-//                 runs.push_back(run);
-                runs.push_back(str);
-            }else{
-                cout<<endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<flush;
-            }
+            cout<<endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<flush;
         }
     }
-    
-    
-    // Now we have processed all inputs, try to determine the list of input files and output file name
-    
-    if(outpattern.size()&&runs.size()){
-        size_t pos = outpattern.find("*");
-        string prefix=outpattern.substr(0, pos);
-        string suffix=outpattern.substr(pos + 1);
-        
-        for(auto r : runs){
-            prefix+=r+"_";
-        }
-        OutFilename=prefix.substr(0,prefix.size()-1)+suffix;
-    }
-    
     
     InputFiles.clear();
     for(auto str : inputpattern){
         
-        //Because it could be a mix of exact files and patters, check again
+        // Because it could be a mix of exact files and patters, check again
         
         if(str.find("**")<str.size()){
             size_t pos = str.find("**");
             string prefix=str.substr(0, pos);
             string suffix=str.substr(pos + 2);
-            
-            // If runs specified use them, else use everything that matches
-            if(runs.size()>0){
-
-                for(auto r : runs){
-                    string testpath=prefix+r+suffix;
-                    
-                    TFile filetest(testpath.c_str());
-                    if(filetest.IsOpen()){//Exists
-                        filetest.Close();
-                        InputFiles.push_back(testpath);
-                    }
-                }                
-                
-            }else{
-                
-                string path="";
-                if(!prefix.find("/")<prefix.size()){
-                    path=prefix.substr(0,prefix.rfind("/"));
-                    prefix=prefix.substr(prefix.rfind("/")+1);
-                }
-                
-                void* dir = gSystem->OpenDirectory(path.c_str());
-                if (!dir) {
-                    std::cerr<< std::endl << "Cannot open directory: " << path<< std::flush; 
-                    continue;
-                }
-
-                const char* entry;
-
-                std::vector<TString> DirectoryItems;
-                while ((entry = gSystem->GetDirEntry(dir))) {
-                    DirectoryItems.emplace_back(entry);
-                }
-                std::sort(DirectoryItems.begin(), DirectoryItems.end());
-                    
-                for(auto fileName : DirectoryItems){
-                    
-                    if (fileName.BeginsWith(prefix.c_str()) && fileName.EndsWith(suffix.c_str())) {
-                        TString fullPath = TString(path) + "/" + fileName;
-                        TFile* file = TFile::Open(fullPath);
-                        if (file && file->IsOpen()) {
-                            file->Close();
-                            InputFiles.push_back(fullPath);
-                        }
-                    }
-                }
-
-                gSystem->FreeDirectory(dir);
+                        
+            string path="";
+            if(!prefix.find("/")<prefix.size()){
+                path=prefix.substr(0,prefix.rfind("/"));
+                prefix=prefix.substr(prefix.rfind("/")+1);
             }
+            
+            void* dir = gSystem->OpenDirectory(path.c_str());
+            if (!dir) {
+                std::cerr<< std::endl << "Cannot open directory: " << path<< std::flush; 
+                continue;
+            }
+
+            const char* entry;
+
+            std::vector<TString> DirectoryItems;
+            while ((entry = gSystem->GetDirEntry(dir))) {
+                DirectoryItems.emplace_back(entry);
+            }
+            std::sort(DirectoryItems.begin(), DirectoryItems.end());
+                
+            for(auto fileName : DirectoryItems){
+                
+                if (fileName.BeginsWith(prefix.c_str()) && fileName.EndsWith(suffix.c_str())) {
+                    TString fullPath = TString(path) + "/" + fileName;
+                    TFile* file = TFile::Open(fullPath);
+                    if (file && file->IsOpen()) {
+                        file->Close();
+                        InputFiles.push_back(fullPath);
+                    }
+                }
+            }
+
+            gSystem->FreeDirectory(dir);
                 
         }else{
             InputFiles.push_back(str);
