@@ -16,79 +16,52 @@
 
 using ROOT::TThreadedObject;
 
+#define JAEA_THREADED_HISTOGRAM_LIST(X) \
+    X(TH2F, siall, "correlations", "rings vs sectors", 32, 0, 32, 32, 0, 32) \
+    X(TH1F, sidt, "timing", "rings and sectors time differences", 200, -1000, 1000) \
+    X(TH2F, ring_sector_E, "correlations", "ring E vs sector E", 512, 0, 8192, 512, 0, 8192) \
+    X(TH2F, ring_sector_E_reduced, "correlations", "ring E vs sector E", 512, 0, 8192, 512, 0, 8192) \
+    X(TH2F, pmpt_ring_sector_E, "correlations", "pmpt_ring E vs sector E *Tdiff<100", 512, 0, 8192, 512, 0, 8192) \
+    X(TH2F, pmpt_ring_sector_E_reduced, "correlations", "pmpt_ring E vs sector E *Tdiff<100", 512, 0, 8192, 512, 0, 8192) \
+    X(TH1F, hSect_CdTe_dT, "timing", "Sector - CdTe time difference", 400, -2000, 2000) \
+    X(TH1F, hSect_HPGe_dT, "timing", "Sector - HPGe time difference", 400, -2000, 2000) \
+    X(TH2F, hSect_CdTe_dT_ADC, "timing", "Sector - CdTe time difference vs ADC", 400, -2000, 2000, 1024, 0, 8192) \
+    X(TH2F, hSect_HPGe_dT_ADC, "timing", "Sector - HPGe time difference vs ADC", 400, -2000, 2000, 1024, 0, 8192) \
+    X(TH2F, hRingRing, "correlations", "Ring # vs Ring #", 32, 0, 32, 32, 0, 32) \
+    X(TH2F, hSectSect, "correlations", "Sect # vs Sect #", 32, 0, 32, 32, 0, 32) \
+    X(TH1F, hSectE_divRingE, "correlations", "Sector energy divided by ring energy", 1000, 0, 10) \
+    X(TH2F, mod1_ch_adc, "modules", "Module 1 channel vs ADC", 32, 0, 32, 1024, 0, 8192) \
+    X(TH2F, mod2_ch_adc, "modules", "Module 2 channel vs ADC", 32, 0, 32, 1024, 0, 8192) \
+    X(TH2F, mod3_ch_adc, "modules", "Module 3 channel vs ADC", 32, 0, 32, 1024, 0, 8192) \
+    X(TH2F, mod4_ch_adc, "modules", "Module 4 channel vs ADC", 32, 0, 32, 1024, 0, 8192) \
+    X(TH3F, mod_ch_adc_ts, "modules", "Module vs channel vs ADC", 8, 0, 8, 32, 0, 32, 256, 0, 8192) \
+    X(TH2D, sector_ring_energy_double, "correlations", "Sector E vs Ring E", 512, 0, 8192, 512, 0, 8192)
+
 struct HistogramRefs {
-    TH2F* siall;
-    TH1F* sidt;
-    TH2F* ring_sector_E;
-    TH2F* ring_sector_E_reduced;
-    TH2F* pmpt_ring_sector_E;
-    TH2F* pmpt_ring_sector_E_reduced;
-    TH1F* hSect_CdTe_dT;
-    TH1F* hSect_HPGe_dT;
-    TH2F* hSect_CdTe_dT_ADC;
-    TH2F* hSect_HPGe_dT_ADC;
-    TH2F* hRingRing;
-    TH2F* hSectSect;
-    TH1F* hSectE_divRingE;
-    TH2F* mod1_ch_adc;
-    TH2F* mod2_ch_adc;
-    TH2F* mod3_ch_adc;
-    TH2F* mod4_ch_adc;
-    TH3F* mod_ch_adc_ts;
-    TH2D* sector_ring_energy_double;
+    #define JAEA_DECLARE_REF(Type, Name, Directory, ...) Type* Name;
+        JAEA_THREADED_HISTOGRAM_LIST(JAEA_DECLARE_REF)
+    #undef JAEA_DECLARE_REF
+
     TH2F* ESumPart[4];
 };
 
+
 class ThreadedHistogramSet {
 public:
-    TThreadedObject<TH2F> siall{"siall", "rings vs sectors", 32, 0, 32, 32, 0, 32};
-    TThreadedObject<TH1F> sidt{"sid", "rings and sectors time differences", 200, -1000, 1000};
-    TThreadedObject<TH2F> ring_sector_E{"ring_sector_E", "ring E vs sector E", 512, 0, 8192, 512, 0, 8192};
-    TThreadedObject<TH2F> ring_sector_E_reduced{"ring_sector_E_reduced", "ring E vs sector E", 512, 0, 8192, 512, 0, 8192};
-    TThreadedObject<TH2F> pmpt_ring_sector_E{"pmpt_ring_sector_E", "pmpt_ring E vs sector E *Tdiff<100", 512, 0, 8192, 512, 0, 8192};
-    TThreadedObject<TH2F> pmpt_ring_sector_E_reduced{"pmpt_ring_sector_E_reduced", "pmpt_ring E vs sector E *Tdiff<100", 512, 0, 8192, 512, 0, 8192};
-    TThreadedObject<TH1F> hSect_CdTe_dT{"Sect_CdTe_dT", "Sector - CdTe time difference", 400, -2000, 2000};
-    TThreadedObject<TH1F> hSect_HPGe_dT{"Sect_HPGe_dT", "Sector - HPGe time difference", 400, -2000, 2000};
-    TThreadedObject<TH2F> hSect_CdTe_dT_ADC{"Sect_CdTe_dT_ADC", "Sector - CdTe time difference vs ADC", 400, -2000, 2000, 1024, 0, 8192};
-    TThreadedObject<TH2F> hSect_HPGe_dT_ADC{"Sect_HPGe_dT_ADC", "Sector - HPGe time difference vs ADC", 400, -2000, 2000, 1024, 0, 8192};
-    TThreadedObject<TH2F> hRingRing{"RingRing", "Ring # vs Ring #", 32, 0, 32, 32, 0, 32};
-    TThreadedObject<TH2F> hSectSect{"SectSect", "Sect # vs Sect #", 32, 0, 32, 32, 0, 32};
-    TThreadedObject<TH1F> hSectE_divRingE{"SectE_divRingE", "Sector energy divided by ring energy", 1000, 0, 10};
-    TThreadedObject<TH2F> mod1_ch_adc{"mod1_ch_adc", "Module 1 channel vs ADC", 32, 0, 32, 1024, 0, 8192};
-    TThreadedObject<TH2F> mod2_ch_adc{"mod2_ch_adc", "Module 2 channel vs ADC", 32, 0, 32, 1024, 0, 8192};
-    TThreadedObject<TH2F> mod3_ch_adc{"mod3_ch_adc", "Module 3 channel vs ADC", 32, 0, 32, 1024, 0, 8192};
-    TThreadedObject<TH2F> mod4_ch_adc{"mod4_ch_adc", "Module 4 channel vs ADC", 32, 0, 32, 1024, 0, 8192};
-    TThreadedObject<TH3F> mod_ch_adc_ts{"mod_ch_adc_ts", "Module vs channel vs ADC", 8, 0, 8, 32, 0, 32, 256, 0, 8192};
-    TThreadedObject<TH2D> sector_ring_energy_double{"sector_ring_energy_double", "Sector E vs Ring E", 512, 0, 8192, 512, 0, 8192};
+    #define JAEA_DECLARE_THREADED_HIST(Type, Name, Directory, ...)  TThreadedObject<Type> Name{#Name, __VA_ARGS__};
+    JAEA_THREADED_HISTOGRAM_LIST(JAEA_DECLARE_THREADED_HIST)
+    #undef JAEA_DECLARE_THREADED_HIST
 
     std::unique_ptr<TThreadedObject<TH2F>> ESumPart[4];
 
     ThreadedHistogramSet()
     {
-        Register(siall, "correlations");
-        Register(sidt, "timing");
-        Register(ring_sector_E, "correlations");
-        Register(ring_sector_E_reduced, "correlations");
-        Register(pmpt_ring_sector_E, "correlations");
-        Register(pmpt_ring_sector_E_reduced, "correlations");
-        Register(hSect_CdTe_dT, "timing");
-        Register(hSect_HPGe_dT, "timing");
-        Register(hSect_CdTe_dT_ADC, "timing");
-        Register(hSect_HPGe_dT_ADC, "timing");
-        Register(hRingRing, "correlations");
-        Register(hSectSect, "correlations");
-        Register(hSectE_divRingE, "correlations");
-        Register(mod1_ch_adc, "modules");
-        Register(mod2_ch_adc, "modules");
-        Register(mod3_ch_adc, "modules");
-        Register(mod4_ch_adc, "modules");
-        Register(mod_ch_adc_ts, "modules");
-        Register(sector_ring_energy_double, "correlations");
+        #define JAEA_REGISTER_THREADED_HIST(Type, Name, Directory, ...) Register(Name, Directory);
+        JAEA_THREADED_HISTOGRAM_LIST(JAEA_REGISTER_THREADED_HIST)
+        #undef JAEA_REGISTER_THREADED_HIST
 
         for (int i = 0; i < 4; ++i) {
-            ESumPart[i].reset(new TThreadedObject<TH2F>(
-                Form("ESumPart_%d", i),
-                Form("E%d vs Esum;Esum;E%d", i, i),
+            ESumPart[i].reset(new TThreadedObject<TH2F>(Form("ESumPart_%d", i),Form("E%d vs Esum;Esum;E%d", i, i),
                 500, 0, 2000, 500, 0, 2000));
             Register(*ESumPart[i], "grouped");
         }
@@ -98,25 +71,9 @@ public:
     {
         HistogramRefs refs;
 
-        refs.siall = siall.Get().get();
-        refs.sidt = sidt.Get().get();
-        refs.ring_sector_E = ring_sector_E.Get().get();
-        refs.ring_sector_E_reduced = ring_sector_E_reduced.Get().get();
-        refs.pmpt_ring_sector_E = pmpt_ring_sector_E.Get().get();
-        refs.pmpt_ring_sector_E_reduced = pmpt_ring_sector_E_reduced.Get().get();
-        refs.hSect_CdTe_dT = hSect_CdTe_dT.Get().get();
-        refs.hSect_HPGe_dT = hSect_HPGe_dT.Get().get();
-        refs.hSect_CdTe_dT_ADC = hSect_CdTe_dT_ADC.Get().get();
-        refs.hSect_HPGe_dT_ADC = hSect_HPGe_dT_ADC.Get().get();
-        refs.hRingRing = hRingRing.Get().get();
-        refs.hSectSect = hSectSect.Get().get();
-        refs.hSectE_divRingE = hSectE_divRingE.Get().get();
-        refs.mod1_ch_adc = mod1_ch_adc.Get().get();
-        refs.mod2_ch_adc = mod2_ch_adc.Get().get();
-        refs.mod3_ch_adc = mod3_ch_adc.Get().get();
-        refs.mod4_ch_adc = mod4_ch_adc.Get().get();
-        refs.mod_ch_adc_ts = mod_ch_adc_ts.Get().get();
-        refs.sector_ring_energy_double = sector_ring_energy_double.Get().get();
+        #define JAEA_RESOLVE_REF(Type, Name, Directory, ...) refs.Name = Name.Get().get();
+        JAEA_THREADED_HISTOGRAM_LIST(JAEA_RESOLVE_REF)
+        #undef JAEA_RESOLVE_REF
 
         for (int i = 0; i < 4; ++i) {
             refs.ESumPart[i] = ESumPart[i]->Get().get();
@@ -185,5 +142,7 @@ private:
         }
     }
 };
+
+#undef JAEA_THREADED_HISTOGRAM_LIST
 
 #endif
