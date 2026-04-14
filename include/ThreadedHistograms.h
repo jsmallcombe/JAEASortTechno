@@ -16,6 +16,29 @@
 
 using ROOT::TThreadedObject;
 
+struct HistogramRefs {
+    TH2F* siall;
+    TH1F* sidt;
+    TH2F* ring_sector_E;
+    TH2F* ring_sector_E_reduced;
+    TH2F* pmpt_ring_sector_E;
+    TH2F* pmpt_ring_sector_E_reduced;
+    TH1F* hSect_CdTe_dT;
+    TH1F* hSect_HPGe_dT;
+    TH2F* hSect_CdTe_dT_ADC;
+    TH2F* hSect_HPGe_dT_ADC;
+    TH2F* hRingRing;
+    TH2F* hSectSect;
+    TH1F* hSectE_divRingE;
+    TH2F* mod1_ch_adc;
+    TH2F* mod2_ch_adc;
+    TH2F* mod3_ch_adc;
+    TH2F* mod4_ch_adc;
+    TH3F* mod_ch_adc_ts;
+    TH2D* sector_ring_energy_double;
+    TH2F* ESumPart[4];
+};
+
 class ThreadedHistogramSet {
 public:
     TThreadedObject<TH2F> siall{"siall", "rings vs sectors", 32, 0, 32, 32, 0, 32};
@@ -116,6 +139,37 @@ public:
         if (previousDirectory) {
             previousDirectory->cd();
         }
+    }
+
+    HistogramRefs ResolveHistogramRefs()
+    {
+        HistogramRefs refs;
+
+        refs.siall = siall.Get().get();
+        refs.sidt = sidt.Get().get();
+        refs.ring_sector_E = ring_sector_E.Get().get();
+        refs.ring_sector_E_reduced = ring_sector_E_reduced.Get().get();
+        refs.pmpt_ring_sector_E = pmpt_ring_sector_E.Get().get();
+        refs.pmpt_ring_sector_E_reduced = pmpt_ring_sector_E_reduced.Get().get();
+        refs.hSect_CdTe_dT = hSect_CdTe_dT.Get().get();
+        refs.hSect_HPGe_dT = hSect_HPGe_dT.Get().get();
+        refs.hSect_CdTe_dT_ADC = hSect_CdTe_dT_ADC.Get().get();
+        refs.hSect_HPGe_dT_ADC = hSect_HPGe_dT_ADC.Get().get();
+        refs.hRingRing = hRingRing.Get().get();
+        refs.hSectSect = hSectSect.Get().get();
+        refs.hSectE_divRingE = hSectE_divRingE.Get().get();
+        refs.mod1_ch_adc = mod1_ch_adc.Get().get();
+        refs.mod2_ch_adc = mod2_ch_adc.Get().get();
+        refs.mod3_ch_adc = mod3_ch_adc.Get().get();
+        refs.mod4_ch_adc = mod4_ch_adc.Get().get();
+        refs.mod_ch_adc_ts = mod_ch_adc_ts.Get().get();
+        refs.sector_ring_energy_double = sector_ring_energy_double.Get().get();
+
+        for (int i = 0; i < 4; ++i) {
+            refs.ESumPart[i] = ESumPart[i]->Get().get();
+        }
+
+        return refs;
     }
 
 private:
