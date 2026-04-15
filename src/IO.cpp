@@ -158,7 +158,7 @@ std::vector<TString> ResolveRootInputSpec(const TString& inputSpec)
     }
 
     if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
-        std::cerr << std::endl << "Cannot open directory: " << directory.string() << std::flush;
+        std::cerr << "Cannot open directory: " << directory.string() << std::endl;
         return files;
     }
 
@@ -228,7 +228,7 @@ std::vector<TString> GetTreeSplitFileList(TString base)
 void JAEASortIO::WriteCalibration(string filename){
     std::ofstream outputFile(filename);
     if (!outputFile.is_open()) {
-        std::cerr << std::endl <<"Failed to open calibration file "<<filename<<" for writing." << std::flush;
+        std::cerr << "Failed to open calibration file "<<filename<<" for writing." << std::endl;
         return;
     }
 
@@ -250,7 +250,7 @@ void JAEASortIO::WriteCalibration(string filename){
 void JAEASortIO::ReadCalibration(string filename){
     std::ifstream inputFile(filename);
     if (!inputFile.is_open()) {
-        std::cerr << std::endl << "Failed to open calibration file "<<filename<<" for reading." << std::flush;
+        std::cerr << "Failed to open calibration file "<<filename<<" for reading." << std::endl;
         return;
     }
   
@@ -280,15 +280,15 @@ void JAEASortIO::ReadCalibration(string filename){
             // Set the calibration in the appropriate location
             DetHit::ChanCal[i][j] = cal;
         } else {
-            std::cerr << std::endl << "Error parsing line: " << line << std::flush;
+            std::cerr << "Error parsing line: " << line << std::endl;
         }
     }
 
     inputFile.close();
     if (inputFile.eof()) {
-        std::cout << std::endl<< "Successfully read from the file: " << filename << std::flush;
+        std::cout << "Successfully read from the file: " << filename << std::endl;
     } else {
-        std::cerr << std::endl<< "An error occurred while reading from the file: " << filename << std::flush;
+        std::cerr << "An error occurred while reading from the file: " << filename << std::endl;
     }
 }
 
@@ -343,7 +343,7 @@ JAEASortIO::JAEASortIO(int argc, char *argv[]):JAEASortIO(){
 void JAEASortIO::ReadInfoFile(string filename){
     ifstream infofile(filename);
     if(infofile.good()){
-        cout<<endl<<"InfoFile : "<<filename<<" "<<flush;
+        std::cout<<"InfoFile : "<<filename<<" "<<std::endl;
         string fileline;
         
         // Doing line by line so that comment lines can be skipped
@@ -369,7 +369,7 @@ void JAEASortIO::ReadInfoFile(string filename){
         }
         infofile.close();
     }else{
-        cout<<endl<<"Invalid infofile file specified : "<<filename<<flush;
+        std::cout<<"Invalid infofile file specified : "<<filename<<std::endl;
     }	
 }
 
@@ -435,7 +435,7 @@ bool JAEASortIO::ProcessInputs(){
             if(HasWildcard(str) || std::filesystem::exists(str)){
                 AddInputRootSpec(str);
             }else{
-                std::cout<<std::endl<<"UNKNOWN ROOT INPUT "<<str<<" (use -hist file.root for outputs)"<<std::flush;
+                std::cout<<"UNKNOWN ROOT INPUT "<<str<<" (use -hist file.root for outputs)"<<std::endl;
             }
         }else if(str[0]=='-'){
             // A special argument, read the next item out of order of normal processing loop
@@ -445,7 +445,7 @@ bool JAEASortIO::ProcessInputs(){
             if(BinInputStem.Length()==0){
                 BinInputStem = str;
             }else{
-                std::cout<<std::endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<std::flush;
+                std::cout<<"UNKNOWN COMMAND LINE INPUT  "<<str<<std::endl;
             }
         }
     }
@@ -459,16 +459,16 @@ bool JAEASortIO::ValidateFiles(){
 
     if(BinInputStem.Length() > 0){
         if (EventInputFiles.size() > 0){
-            std::cout<<std::endl<<"PROVIDED .bin AND .root INPUTS. LIMIT TO EITHER RAW .bin OR EVENT .root INPUT."<<std::flush;
+            std::cout<<"PROVIDED .bin AND .root INPUTS. LIMIT TO EITHER RAW .bin OR EVENT .root INPUT."<<std::endl;
             return false;
         }
 
         Digitisers=BuildDigitiserList(BinInputStem);
         if(!Digitisers.size()){
-            std::cout<<std::endl<<"FAILED TO LOCATE SPECIFIED .bin FILES "<<BinInputStem<<std::flush;
+            std::cout<<"FAILED TO LOCATE SPECIFIED .bin FILES "<<BinInputStem<<std::endl;
             return false;
         }else{
-            std::cout<<"Raw run .bin file stem used "<<BinInputStem<<std::flush;
+            std::cout<<"Raw run .bin file stem used "<<BinInputStem<<std::endl;
 
             if(DoHistSort&&HistogramOutFilename.Length() == 0) {
                 HistogramOutFilename = BinInputStem+"_hist.root";                
@@ -491,15 +491,15 @@ bool JAEASortIO::ValidateFiles(){
 
     if(WriteEventTree){
         if(BinInputStem.Length() > 0) {
-            std::cout<<std::endl<<"TTree Output File "<<EventTreeOutFilename<<std::flush;
+            std::cout<<"TTree Output File "<<EventTreeOutFilename<<std::endl;
         }else{
-            std::cout<<std::endl<<"TTREE OUTPUT REQUESTED BUT NO .bin FILES PROVIDED."<<std::flush;
+            std::cout<<"TTREE OUTPUT REQUESTED BUT NO .bin FILES PROVIDED."<<std::endl;
             return false;
         }
     }
 
     if(WriteEventTree && EventInputFiles.size() > 0){
-        std::cout<<std::endl<<"ERROR: REQUESTED TTREE BUILDING AND PROVIDED TTREE INPUT."<<std::flush;
+        std::cout<<"ERROR: REQUESTED TTREE BUILDING AND PROVIDED TTREE INPUT."<<std::endl;
         return false;
     }
 
@@ -512,11 +512,11 @@ bool JAEASortIO::ValidateFiles(){
     }
 
     if (DoHistSort) {
-        std::cout<<std::endl<<"Histogram Output File "<<HistogramOutFilename<<std::flush;
+        std::cout<<"Histogram Output File "<<HistogramOutFilename<<std::endl;
     }
 
     if(!(WriteEventTree||DoHistSort)){
-        std::cout<<std::endl<<"NO OUTPUT MODE SELECTED. DEFAULTING TO TREE."<<std::flush;
+        std::cout<<"NO OUTPUT MODE SELECTED. DEFAULTING TO TREE."<<std::endl;
         WriteEventTree = true;
         // return false;
     }
@@ -575,7 +575,7 @@ void JAEASortIO::ProcessOption(TString str){
                     
                 TFile *file = TFile::Open(str, "READ");
                 if (!file || file->IsZombie()) {
-                    std::cerr<< std::endl << "Error: Could not open file " << str <<std::flush;
+                    std::cerr<< "Error: Could not open file " << str << std::endl;
                     return;
                 }
                 
@@ -591,7 +591,7 @@ void JAEASortIO::ProcessOption(TString str){
                         if (cutG) {
                             gROOT->cd();
                             CutGates.push_back((TCutG*)cutG->Clone(fileName));
-                            std::cout<< std::endl << "Found a TCutG object: " << cutG->GetName() << std::flush;
+                            std::cout<< "Found a TCutG object: " << cutG->GetName() << std::endl;
                         }
                         break; // Exit the loop after finding the first TCutG
                     }
@@ -614,7 +614,7 @@ void JAEASortIO::ProcessOption(TString str){
             NumericInputNames.push_back(str);
             NumericInputs.push_back(inputdata);
         
-            std::cout<< std::endl << str<<" : " << inputdata << std::flush;
+            std::cout<< str<<" : " << inputdata << std::endl;
         }
 }
     
@@ -679,12 +679,12 @@ TChain* JAEASortIO::DataTree(TString TreeName){
         
         TFile filetest(FileName); // Shouldnt be needed as we already tests 
         if(filetest.IsOpen()){
-            cout<<endl<<"Added data : "<<FileName<<flush;
+            std::cout<<"Added data : "<<FileName<<std::endl;
             filetest.Close();
             DataChain->Add(FileName);
             Entries.push_back(DataChain->GetEntries());
         }else{
-            cout<<endl<<"Invalid data file : "<<FileName<<flush;
+            std::cout<<"Invalid data file : "<<FileName<<std::endl;
         }
 	}
 	if(Entries.size()>0){

@@ -21,28 +21,16 @@ int main(int argc, char** argv)
     Long64_t TS_Diff = gIO->GetInput("Window",gTS_Diff);
 
     if(gIO->TestInput("Window")){
-        std::cout<< std::endl << "Build window default overidden: " << TS_Diff << std::flush;
+        std::cout << "Build window default overidden: " << TS_Diff << std::endl;
     }
 
     if(ReadBin){
-        if(WriteTree) {
-        }
-        std::cout<<std::endl<<"Running bin sort with "<<gIO->Digitisers.size()<<" digitiser modules."<<std::flush;
-        gIO->SortBins(WriteTree, DoHistSort, Overwrite, TS_Diff);
+        // Sorting from .bin files, writing either tree or histograms or both
+        FunctionToChooseVersionOfThreadedBinSort(TS_Diff,Overwrite,WriteTree,DoHistSort,HistWorkers);
     }else if(ReadTree){
-        if(!DoHistSort) {
-            std::cout << std::endl << "Running tree sort with " << EventData->GetEntries() << " entries." << std::flush;
-            gIO->SortTree(EventData, WriteTree, DoHistSort, Overwrite, HistWorkers);
-        }else{      
-        std::cout<<std::endl<<"Running tree sort with "<<EventData->GetEntries()<<" entries."<<std::flush;
-        gIO->SortTree(EventData, WriteTree, DoHistSort, Overwrite, HistWorkers);
-    }else{
-        std::cout<<std::endl<<"No input data found. Exiting."<<std::flush;
-    }   
-
-
-
-
+        // Threaded sort to histograms from event tree
+        ThreadedTreeSort(EventData,HistWorkers,Overwrite);
+    }
 
     if(EventData!=nullptr)delete EventData;
     if(gIO!=nullptr)delete gIO;

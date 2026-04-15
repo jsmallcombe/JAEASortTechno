@@ -6,8 +6,6 @@ int main(int argc, char** argv)
 {
     JAEASortIO io(argc, argv);
     std::cout<<std::endl;
-    std::cout<<std::endl;
-    std::cout<<std::endl;
 
     std::cout << "BinInputStem: " << io.BinInputStem << "\n";
     std::cout << "EventTreeOutFilename: " << io.EventTreeOutFilename << "\n";
