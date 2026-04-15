@@ -18,6 +18,11 @@ bool IsRootPath(const std::string& value)
     return EndsWith(value, ".root");
 }
 
+bool IsImplicitRootWildcard(const std::string& value)
+{
+    return !value.empty() && value.back() == '*' && !IsRootPath(value);
+}
+
 bool IsInfoPath(const std::string& value)
 {
     return EndsWith(value, ".info");
@@ -414,8 +419,13 @@ void JAEASortIO::PrintManual(std::ostream& os)
 
 void JAEASortIO::AddInputRootSpec(const TString& inputSpec)
 {
-    if (IsRootPath(inputSpec.Data())) {
-        InputRootSpecs.push_back(inputSpec);
+    std::string spec = inputSpec.Data();
+    if (IsImplicitRootWildcard(spec)) {
+        spec += ".root";
+    }
+
+    if (IsRootPath(spec)) {
+        InputRootSpecs.push_back(TString(spec));
     }
 }
 
@@ -449,7 +459,7 @@ void JAEASortIO::ProcessInputs(){
         // If a cal file, read it in to DetHit class
         if(IsCalibrationPath(str)){
             ReadCalibration(str);
-        }else if(IsRootPath(str)){ // If a root file name
+        }else if(IsRootPath(str) || IsImplicitRootWildcard(str)){ // If a root file name
             if(HasWildcard(str) || std::filesystem::exists(str)){
                 AddInputRootSpec(str);
             }else{
