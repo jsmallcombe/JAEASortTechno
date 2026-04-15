@@ -12,6 +12,7 @@ CFLAGS = -std=c++11 -g -fPIC $(ROOT_GCC_FLAGS) -I$(INCLUDE)
 LIBRS = -L$(INCLUDE) $(ROOT_LIBS) -L$(LIB) -L$(LIB)/bin
 
 OBJECTS = $(patsubst src/%.cpp,bin/%.o,$(wildcard src/*.cpp))
+DEPS = $(OBJECTS:.o=.d)
 # SYSHEAD = $(wildcard include/*.h)
 # HEAD = $(patsubst %.h,$(shell pwd)/%.h,$(SYSHEAD))
 PROG = $(patsubst programs/%.C,bin/%,$(wildcard programs/*.C))
@@ -22,8 +23,8 @@ TARG = bin/JAEASort
 DUMMY: $(OBJECTS) $(PROG)
 	ls
 
-bin/%.o: src/%.cpp include/%.h 
-	$(CC) $(CFLAGS) -o $@ -c $< $(LIBRS)
+bin/%.o: src/%.cpp
+	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $< $(LIBRS)
 	
 bin/%: programs/%.C $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $< -I. $(OBJECTS)  $(LIBRS) 
@@ -83,5 +84,7 @@ bin/%: programs/%.C $(OBJECTS)
 	
 clean:
 	rm -f $(LIB)/bin/*.o
+	rm -f $(LIB)/bin/*.d
 	rm -f $(LIB)/$(PROG)
 
+-include $(DEPS)

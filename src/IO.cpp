@@ -5,6 +5,8 @@
 #include <regex>
 #include <unordered_set>
 
+JAEASortIO* gIO = nullptr;
+
 namespace {
 
 bool EndsWith(const std::string& value, const std::string& suffix)
@@ -51,6 +53,24 @@ bool IsSplitRootFile(const std::filesystem::path& path)
 {
     static const std::regex splitPattern(".*_[0-9]+$");
     return std::regex_match(path.stem().string(), splitPattern);
+}
+
+std::filesystem::path GetManualPath()
+{
+    const std::filesystem::path sourcePath(__FILE__);
+    const std::filesystem::path sourceDir = sourcePath.parent_path();
+
+    const std::filesystem::path candidate = sourceDir / ".." / "README";
+    if (std::filesystem::exists(candidate)) {
+        return candidate.lexically_normal();
+    }
+
+    const std::filesystem::path localCandidate = std::filesystem::current_path() / "README";
+    if (std::filesystem::exists(localCandidate)) {
+        return localCandidate.lexically_normal();
+    }
+
+    return candidate.lexically_normal();
 }
 
 std::string WildcardToRegex(const std::string& pattern)
@@ -315,51 +335,9 @@ JAEASortIO::JAEASortIO(int argc, char *argv[]):JAEASortIO(){
 	}
 	
 	Rewind();
-    ProcessInputs();
+    Validated=ProcessInputs();
+    std::cout<<std::endl;
 };
-
-JAEASortIO::JAEASortIO(const JAEASortIO& obj)
-{
-    store = obj.store;
-    NumericInputs = obj.NumericInputs;
-    NumericInputNames = obj.NumericInputNames;
-    InputRootSpecs = obj.InputRootSpecs;
-    BinInputStem = obj.BinInputStem;
-    EventInputFiles = obj.EventInputFiles;
-    EventTreeOutFilename = obj.EventTreeOutFilename;
-    HistogramOutFilename = obj.HistogramOutFilename;
-    Entries = obj.Entries;
-    GateID = obj.GateID;
-    ShowManual = obj.ShowManual;
-    CloneCutGates(obj.CutGates, CutGates);
-    Rewind();
-}
-
-JAEASortIO& JAEASortIO::operator=(const JAEASortIO& obj)
-{
-    if (this == &obj) {
-        return *this;
-    }
-
-    for (auto g : CutGates) {
-        delete g;
-    }
-
-    store = obj.store;
-    NumericInputs = obj.NumericInputs;
-    NumericInputNames = obj.NumericInputNames;
-    InputRootSpecs = obj.InputRootSpecs;
-    BinInputStem = obj.BinInputStem;
-    EventInputFiles = obj.EventInputFiles;
-    EventTreeOutFilename = obj.EventTreeOutFilename;
-    HistogramOutFilename = obj.HistogramOutFilename;
-    Entries = obj.Entries;
-    GateID = obj.GateID;
-    ShowManual = obj.ShowManual;
-    CloneCutGates(obj.CutGates, CutGates);
-    Rewind();
-    return *this;
-}
 
 
 void JAEASortIO::ReadInfoFile(string filename){
@@ -397,24 +375,15 @@ void JAEASortIO::ReadInfoFile(string filename){
 
 void JAEASortIO::PrintManual(std::ostream& os)
 {
-    os << "JAEASortIO input syntax\n"
-       << "  bin run input:\n"
-       << "    -bin /path/to/runprefix\n"
-       << "    or provide one non-.root argument to use as the digitiser run stem.\n"
-       << "  event tree output:\n"
-       << "    -tree events.root\n"
-       << "  histogram tree input:\n"
-       << "    file.root\n"
-       << "    '/path/run*.root'\n"
-       << "  histogram output:\n"
-       << "    -hist hist.root\n"
-       << "  calibration:\n"
-       << "    calib.cal\n"
-       << "  help:\n"
-       << "    -man\n"
-       << "Notes:\n"
-       << "  If an input includes file.root, matching split files file_1.root, file_2.root, ... are added automatically.\n"
-       << "  Duplicate ROOT inputs are removed after wildcard expansion and split-file discovery.\n";
+    const std::filesystem::path manualPath = GetManualPath();
+    std::ifstream manualFile(manualPath);
+
+    if (!manualFile.is_open()) {
+        os << "Unable to open manual file: " << manualPath.string() << '\n';
+        return;
+    }
+
+    os << manualFile.rdbuf();
 }
 
 void JAEASortIO::AddInputRootSpec(const TString& inputSpec)
@@ -446,12 +415,15 @@ void JAEASortIO::ResolveInputFiles()
 
 }
 
-void JAEASortIO::ProcessInputs(){
+bool JAEASortIO::ProcessInputs(){
     InputRootSpecs.clear();
     EventInputFiles.clear();
     BinInputStem = "";
     EventTreeOutFilename = "";
+    TreeOutputPath = "";
     HistogramOutFilename = "";
+    WriteEventTree = false;
+    Overwrite = false;
     
     string str;
     while(*this>>str){
@@ -463,7 +435,7 @@ void JAEASortIO::ProcessInputs(){
             if(HasWildcard(str) || std::filesystem::exists(str)){
                 AddInputRootSpec(str);
             }else{
-                std::cout<<std::endl<<"UNKNOWN ROOT INPUT "<<str<<" (use -tree or -hist for outputs)"<<std::flush;
+                std::cout<<std::endl<<"UNKNOWN ROOT INPUT "<<str<<" (use -hist file.root for outputs)"<<std::flush;
             }
         }else if(str[0]=='-'){
             // A special argument, read the next item out of order of normal processing loop
@@ -473,19 +445,81 @@ void JAEASortIO::ProcessInputs(){
             if(BinInputStem.Length()==0){
                 BinInputStem = str;
             }else{
-                cout<<endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<flush;
+                std::cout<<std::endl<<"UNKNOWN COMMAND LINE INPUT  "<<str<<std::flush;
+            }
+        }
+    }
+    std::cout<< std::endl;
+    return ValidateFiles();
+
+}
+
+bool JAEASortIO::ValidateFiles(){
+    ResolveInputFiles();
+
+    if(BinInputStem.Length() > 0){
+        if (EventInputFiles.size() > 0){
+            std::cout<<std::endl<<"PROVIDED .bin AND .root INPUTS. LIMIT TO EITHER RAW .bin OR EVENT .root INPUT."<<std::flush;
+            return false;
+        }
+
+        Digitisers=BuildDigitiserList(BinInputStem);
+        if(!Digitisers.size()){
+            std::cout<<std::endl<<"FAILED TO LOCATE SPECIFIED .bin FILES "<<BinInputStem<<std::flush;
+            return false;
+        }else{
+            std::cout<<"Raw run .bin file stem used "<<BinInputStem<<std::flush;
+
+            if(DoHistSort&&HistogramOutFilename.Length() == 0) {
+                HistogramOutFilename = BinInputStem+"_hist.root";                
             }
         }
     }
 
-    ResolveInputFiles();
+    if(WriteEventTree){
 
-    if (BinInputStem.Length() > 0 && EventTreeOutFilename.Length() == 0) {
-        EventTreeOutFilename = "Out.root";
+        if(BinInputStem.Length() > 0) {
+            std::filesystem::path outputStem(BinInputStem.Data());
+            std::filesystem::path outputFile = outputStem;
+            outputFile += ".root";
+
+            if (TreeOutputPath.Length() > 0) {
+                const std::filesystem::path treeDirectory(TreeOutputPath.Data());
+                outputFile = treeDirectory / outputFile.filename();
+            }
+
+            EventTreeOutFilename = outputFile.string();
+            std::cout<<std::endl<<"TTree Output File "<<EventTreeOutFilename<<std::flush;
+
+        }else{
+            std::cout<<std::endl<<"TTREE OUTPUT REQUESTED BUT NO .bin FILES PROVIDED."<<std::flush;
+            return false;
+        }
     }
+
+    if(WriteEventTree && EventInputFiles.size() > 0){
+        std::cout<<std::endl<<"ERROR: REQUESTED TTREE BUILDING AND PROVIDED TTREE INPUT."<<std::flush;
+        return false;
+    }
+
     if (EventInputFiles.size() > 0 && HistogramOutFilename.Length() == 0) {
-        HistogramOutFilename = "Out.root";
+        DoHistSort=true;
+        HistogramOutFilename = EventInputFiles[0];
+        int i=EventInputFiles.size();
+        TString suffix="."+TString(i)+"_hist.root";
+        HistogramOutFilename.Replace(HistogramOutFilename.Length() - 5, 5, suffix);
     }
+
+    if (DoHistSort) {
+        std::cout<<std::endl<<"Histogram Output File "<<HistogramOutFilename<<std::flush;
+    }
+
+    if(!(WriteEventTree||DoHistSort)){
+        std::cout<<std::endl<<"NO OUTPUT MODE SELECTED."<<std::flush;
+        return false;
+    }
+
+    return true;
 }
 
 TString StripFileName(TString str){
@@ -505,22 +539,27 @@ void JAEASortIO::ProcessOption(TString str){
         // A special argument, read the next item out of order of normal processing loop
 
 // Contains 
-        if(str.EqualTo("-man") || str.EqualTo("--man") || str.EqualTo("-h") || str.EqualTo("--help")){
-            ShowManual = true;
+        if(str.EqualTo("-man") || str.EqualTo("--man") || str.EqualTo("--help")){
             PrintManual();
         }else if(str.EqualTo("-bin")){
             *this>>str;
             BinInputStem = str;
-        }else if(str.EqualTo("-tree")){
+        }else if(str.EqualTo("-tree")||str.EqualTo("-T")){
+            WriteEventTree = true;
+        }else if(str.EqualTo("-treepath")||str.EqualTo("-treedir")){
             *this>>str;
-            if(IsRootPath(str.Data())){ // If a root file name
-                EventTreeOutFilename=str;
-            }
+            TreeOutputPath = str;
+            WriteEventTree = true;
+        }else if(str.EqualTo("-H")||str.EqualTo("-h")){
+            DoHistSort=true;
         }else if(str.EqualTo("-hist")){
             *this>>str;
+            DoHistSort=true;
             if(IsRootPath(str.Data())){ // If a root file name
                 HistogramOutFilename=str;
             }
+        }else if(str.EqualTo("-O") || str.EqualTo("-o")){
+            Overwrite = true;
         }else if(str.EqualTo("-ID")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name
@@ -640,8 +679,12 @@ TChain* JAEASortIO::DataTree(TString TreeName){
             cout<<endl<<"Invalid data file : "<<FileName<<flush;
         }
 	}
-	
-	return DataChain;
+	if(Entries.size()>0){
+	    return DataChain;
+    }else{
+        delete DataChain;
+        return nullptr;
+    }
 }
 
 
@@ -651,9 +694,9 @@ bool JAEASortIO::TestInput(TString InputName) const{
     }
     return false;
 }
-double JAEASortIO::GetInput(TString InputName) const{
+double JAEASortIO::GetInput(TString InputName,double dflt) const{
     for(unsigned int i=0;i<NumericInputNames.size();i++){
         if(NumericInputNames[i]==InputName)return NumericInputs[i];
     }
-    return 0;
+    return dflt;
 }

@@ -17,53 +17,49 @@
 #include <TCutG.h>
 #include <filesystem>
 #include <ostream>
+#include <Digitisers.h>
 
 using namespace std;
+
+class JAEASortIO;
+extern JAEASortIO* gIO;
 
 std::vector<TString> GetTreeSplitFileList(TString base);
 
 class JAEASortIO{
     
     public:
-    static void WriteCalibration(string filename="cal.txt");
-    static void ReadCalibration(string filename="cal.txt");
-    static void PrintManual(std::ostream& os = std::cout);
     
-    private:
-	vector<string> store;
-    vector<double> NumericInputs;
-    vector<TString> NumericInputNames;
-    vector<TString> InputRootSpecs;
-
-    void AddInputRootSpec(const TString& inputSpec);
-    void ResolveInputFiles();
-	
-    public:
-    TString BinInputStem;
-    vector<TString> EventInputFiles;
-    TString EventTreeOutFilename;
-    TString HistogramOutFilename;
-    vector<long> Entries;
-    vector<TCutG*> CutGates;
-    vector<UShort_t> GateID;
-    bool ShowManual = false;
-	
-
-	stringstream infostream;
-	void Rewind();
-	
 	JAEASortIO(){};
 	JAEASortIO(int argc, char *argv[]);	
 	virtual ~JAEASortIO(){
 		for(auto g : CutGates)delete g;
 	};
-	
-	JAEASortIO( const JAEASortIO &obj);
-	JAEASortIO& operator=(const JAEASortIO& obj);
-	
-	void ReadInfoFile(string filename);
-	void ProcessInputs();
-	void ProcessOption(TString str);
+	JAEASortIO(const JAEASortIO&) = delete;
+	JAEASortIO& operator=(const JAEASortIO&) = delete;
+
+    static void WriteCalibration(string filename="cal.txt");
+    static void ReadCalibration(string filename="cal.txt");
+    static void PrintManual(std::ostream& os = std::cout);
+
+	stringstream infostream;
+
+    vector<long> Entries;
+    vector<TString> EventInputFiles;
+
+    TString BinInputStem;
+    vector<std::unique_ptr<DigitiserBase>> Digitisers;
+    TString EventTreeOutFilename;
+    TString TreeOutputPath;
+    TString HistogramOutFilename;
+    
+    vector<TCutG*> CutGates;
+    vector<UShort_t> GateID;
+
+    bool WriteEventTree = false;
+    bool DoHistSort = false;
+    bool Overwrite = false;
+    bool Validated;
 
 	string ReturnFind(string compare) const;
 	bool IsPresent(string compare) const;
@@ -73,9 +69,24 @@ class JAEASortIO{
 	void NextTwo(string compare,double& ret,double& retB) const;
     
     bool TestInput(TString InputName) const;
-    double GetInput(TString InputName) const;
+    double GetInput(TString InputName,double=0) const;
 	
     TChain* DataTree(TString TreeName);
+    
+    private:
+	vector<string> store;
+    vector<double> NumericInputs;
+    vector<TString> NumericInputNames;
+    vector<TString> InputRootSpecs;
+
+    void AddInputRootSpec(const TString& inputSpec);
+	bool ProcessInputs();
+    void ResolveInputFiles();
+    bool ValidateFiles();
+	void ReadInfoFile(string filename);
+	void ProcessOption(TString str);
+	void Rewind();
+
 
 };
 
