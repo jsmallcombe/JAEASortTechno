@@ -24,8 +24,26 @@ int main(int argc, char** argv)
         std::cout<< std::endl << "Build window default overidden: " << TS_Diff << std::flush;
     }
 
+    if(ReadBin){
+        if(WriteTree) {
+        }
+        std::cout<<std::endl<<"Running bin sort with "<<gIO->Digitisers.size()<<" digitiser modules."<<std::flush;
+        gIO->SortBins(WriteTree, DoHistSort, Overwrite, TS_Diff);
+    }else if(ReadTree){
+        if(!DoHistSort) {
+            std::cout << std::endl << "Running tree sort with " << EventData->GetEntries() << " entries." << std::flush;
+            gIO->SortTree(EventData, WriteTree, DoHistSort, Overwrite, HistWorkers);
+        }else{      
+        std::cout<<std::endl<<"Running tree sort with "<<EventData->GetEntries()<<" entries."<<std::flush;
+        gIO->SortTree(EventData, WriteTree, DoHistSort, Overwrite, HistWorkers);
+    }else{
+        std::cout<<std::endl<<"No input data found. Exiting."<<std::flush;
+    }   
 
-    
+
+
+
+
     if(EventData!=nullptr)delete EventData;
     if(gIO!=nullptr)delete gIO;
     return 0;

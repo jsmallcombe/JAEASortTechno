@@ -118,6 +118,7 @@ public:
 class APV8104 : public DigitiserBase {
 public:
     APV8104(TString runName,int module) : DigitiserBase(runName, module) {}
+    static int ModuleZeroIndex;
 
     static TString buildFileName(TString rn,int filei) {
         TString name;
@@ -143,13 +144,14 @@ public:
 };
 
 // =========================
-// APV8032 (Mod 1–3)
+// APV8032 
 // =========================
 class APV8032 : public DigitiserBase {
 public:
     UShort_t fmod = 0;
     APV8032(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
+    static int ModuleZeroIndex;
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
@@ -179,13 +181,14 @@ public:
 };
 
 // =========================
-// APV8016A (Mod 4)
+// APV8016A 
 // =========================
 class APV8016A : public DigitiserBase {
 public:
     UShort_t fmod = 0;
     APV8016A(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
+    static int ModuleZeroIndex;
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;

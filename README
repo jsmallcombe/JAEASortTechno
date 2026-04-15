@@ -1,34 +1,46 @@
 JAEASortIO input syntax
+
   bin run input:
     -bin /filepath/runprefix
-    or provide one non-.root argument to use as the digitiser run stem.
+      Or provide one non-.root argument to use as the digitiser run stem.
   event tree output (from bin):
     -tree
-    writes the event tree to /filepath/runprefix.root.
+      Writes the event tree to /filepath/runprefix.root.
     -treepath /path/to/output
-    rewrites the event tree output to /path/to/output/runprefix.root.
+      Rewrites the event tree output to /path/to/output/runprefix.root.
   event tree input (to hist):
     file.root
     '/path/run*.root'
+      Note: If an event tree input includes file.root, 
+      Matching split files file_1.root, file_2.root, ... are added automatically.
+      Duplicate inputs are removed after wildcard expansion and split-file discovery.
   histogram output:
     -H / -h
-    Build histograms with automated filename
+      Build histograms with automated filename
     -hist path/hist.root
-    Build histograms with manual path/filename
-  particle-ID gates:
-    -ID gatefile.root gate_id
-    loads the first TCutG found in gatefile.root and associates it with gate_id.
-  numeric options:
-    -OptionName value
-    stores value under OptionName for later access via TestInput/GetInput.
+      Build histograms with manual path/filename
   overwrite:
     -O / -o
-    enables overwrite mode.
+      Enables overwrite mode. For event tree and histogram outputs.
+
+  particle-ID gates:
+    -ID gatefile.root gate_id
+      loads the first TCutG found in gatefile.root and associates it with gate_id.
+  numeric options:
+    -OptionName value
+      stores value under OptionName for later access via TestInput/GetInput.
   calibration file:
     file.cal
-  info file:
+  options file:
     file.info
-  Info files are expanded inline, and may themselves reference further info files.
-Notes:
-  If an event tree input includes file.root, matching split files file_1.root, file_2.root, ... are added automatically.
-  Duplicate ROOT inputs are removed after wildcard expansion and split-file discovery.
+      Info files contain the same syntax as command-line input.
+      Info files are expanded inline, and may themselves reference further info files.
+      Lines beginning with hash (#) are treated as comments and ignored.
+  digitiser module;
+    -APV8104 zeroindex
+    -APV8032 zeroindex
+    -APV8016A zeroindex
+      zeroindex is the module number corresponding to fmodl=1.
+      If not provided, modules are indexed in order of .bin file discovery.
+  
+

@@ -474,23 +474,24 @@ bool JAEASortIO::ValidateFiles(){
                 HistogramOutFilename = BinInputStem+"_hist.root";                
             }
         }
+
+        // Build the output tree string even if it isnt going to be used
+        std::filesystem::path outputStem(BinInputStem.Data());
+        std::filesystem::path outputFile = outputStem;
+        outputFile += ".root";
+
+        if (TreeOutputPath.Length() > 0) {
+            const std::filesystem::path treeDirectory(TreeOutputPath.Data());
+            outputFile = treeDirectory / outputFile.filename();
+        }
+
+        EventTreeOutFilename = outputFile.string();
+
     }
 
     if(WriteEventTree){
-
         if(BinInputStem.Length() > 0) {
-            std::filesystem::path outputStem(BinInputStem.Data());
-            std::filesystem::path outputFile = outputStem;
-            outputFile += ".root";
-
-            if (TreeOutputPath.Length() > 0) {
-                const std::filesystem::path treeDirectory(TreeOutputPath.Data());
-                outputFile = treeDirectory / outputFile.filename();
-            }
-
-            EventTreeOutFilename = outputFile.string();
             std::cout<<std::endl<<"TTree Output File "<<EventTreeOutFilename<<std::flush;
-
         }else{
             std::cout<<std::endl<<"TTREE OUTPUT REQUESTED BUT NO .bin FILES PROVIDED."<<std::flush;
             return false;
@@ -515,8 +516,9 @@ bool JAEASortIO::ValidateFiles(){
     }
 
     if(!(WriteEventTree||DoHistSort)){
-        std::cout<<std::endl<<"NO OUTPUT MODE SELECTED."<<std::flush;
-        return false;
+        std::cout<<std::endl<<"NO OUTPUT MODE SELECTED. DEFAULTING TO TREE."<<std::flush;
+        WriteEventTree = true;
+        // return false;
     }
 
     return true;
@@ -560,6 +562,12 @@ void JAEASortIO::ProcessOption(TString str){
             }
         }else if(str.EqualTo("-O") || str.EqualTo("-o")){
             Overwrite = true;
+        }else if(str.EqualTo("-APV8104")){
+            *this>>APV8104::ModuleZeroIndex;
+        }else if(str.EqualTo("-APV8032")){
+            *this>>APV8032::ModuleZeroIndex;
+        }else if(str.EqualTo("-APV8016A")){
+            *this>>APV8016A::ModuleZeroIndex;
         }else if(str.EqualTo("-ID")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name
