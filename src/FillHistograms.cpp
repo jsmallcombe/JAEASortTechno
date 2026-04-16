@@ -228,6 +228,9 @@ void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
                                        ThreadedHistogramSet& histograms,
                                        unsigned int nthreads)
 {
+    ROOT::EnableThreadSafety();
+    histograms.ResolveHistogramRefs();
+
     unsigned int workerCount = nthreads;
     if (workerCount == 0) {
         workerCount = std::thread::hardware_concurrency();
