@@ -20,12 +20,19 @@ int main(int argc, char** argv)
     bool DoHistSort = gIO->DoHistSort;
     bool Overwrite = gIO->Overwrite;
 
+    cout<<endl<<"Input summary:"<<endl;
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff);
     int ChunkSize = gIO->GetInput("Chunk", gBinChunkDefaultSize);
     int QueueSize = gIO->GetInput("Queue", gThreadQueueChunks);
     int BufferSize = gIO->GetInput("Buffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
+    Long64_t HistTreeChunkMB = gIO->GetInput("HistTreeMB", 500);
+    int HistTreeModeInput = gIO->GetInput("HistTreeMode", 0);
+    EventTreeQueueHistMode HistTreeMode =
+        (HistTreeModeInput == 1)
+            ? EventTreeQueueHistMode::PerChunkFillHistogramsFromEventTree
+            : EventTreeQueueHistMode::PersistentWorkers;
 
     if (gIO->TestInput("Window")) {
         std::cout << "Build window default overidden: " << TS_Diff << std::endl;
@@ -42,7 +49,21 @@ int main(int argc, char** argv)
     if (gIO->TestInput("Tolerance")) {
         std::cout << "Timestamp tolerance overridden: " << TsTolerance << std::endl;
     }
+    if (gIO->TestInput("HistTreeMB")) {
+        std::cout << "Histogram tree chunk target overridden: " << HistTreeChunkMB << " MiB" << std::endl;
+    }
+    if (gIO->TestInput("HistTreeMode")) {
+        std::cout << "Histogram tree consumer mode overridden: " << HistTreeModeInput << std::endl;
+    }
 
+    cout<<endl<<gIO->TestInput("Buffer")<<endl;
+    cout<<"Build window: "<<TS_Diff<<endl;
+    cout<<"Chunk size: "<<ChunkSize<<endl;
+    cout<<"Queue size: "<<QueueSize<<endl;
+    cout<<"Build buffer: "<<BufferSize<<endl;
+    cout<<"Timestamp tolerance: "<<TsTolerance<<endl;
+    cout<<"Histogram tree chunk target: "<<HistTreeChunkMB<<" MiB"<<endl;
+    cout<<"Histogram tree consumer mode: "<<HistTreeModeInput<<endl;
     int status = 0;
 
     TStopwatch timer;
@@ -62,7 +83,9 @@ int main(int argc, char** argv)
                               ChunkSize,
                               QueueSize,
                               BufferSize,
-                              TsTolerance);
+                              TsTolerance,
+                              HistTreeChunkMB * 1024LL * 1024LL,
+                              HistTreeMode);
     } else if (ReadTree) {
         timer.Start();
         ranSort = true;

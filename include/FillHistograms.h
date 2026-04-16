@@ -5,8 +5,14 @@
 #include <ThreadQueue.h>
 #include <ThreadedHistograms.h>
 
+#include <TMemFile.h>
 #include <TString.h>
 #include <TTree.h>
+
+enum class EventTreeQueueHistMode {
+    PersistentWorkers = 0,
+    PerChunkFillHistogramsFromEventTree = 1
+};
 
 void FillHistograms(ThreadedHistogramSet& histograms, const BuiltEventView& event);
 
@@ -17,6 +23,14 @@ void FillHistogramsFromEventTree(TTree* tree,
 void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
                                        ThreadedHistogramSet& histograms,
                                        unsigned int nthreads = 0);
+
+void FillHistogramsFromEventTreeQueue(ThreadSafeQueue<TMemFile*>& queue,
+                                      ThreadedHistogramSet& histograms,
+                                      unsigned int nthreads = 0);
+
+void FillHistogramsFromEventTreeQueueUsingExistingFunction(ThreadSafeQueue<TMemFile*>& queue,
+                                                           ThreadedHistogramSet& histograms,
+                                                           unsigned int nthreads = 0);
 
 bool WriteHistogramFile(ThreadedHistogramSet& histograms,
                         const TString& outfilename,

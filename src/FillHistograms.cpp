@@ -4,11 +4,16 @@
 #include <IO.h>
 #include <Detectors.h>
 #include <TFile.h>
+#include <TMemFile.h>
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
 
+#include <atomic>
+#include <chrono>
 #include <thread>
+
+void FillHistograms(HistogramRefs& H, const BuiltEventView& event);
 
 namespace {
 struct DetHitScratch {
@@ -91,6 +96,71 @@ DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
     }
 
     return scratch;
+}
+
+struct HistogramStageTimers {
+    std::chrono::steady_clock::duration setup{};
+    std::chrono::steady_clock::duration fill{};
+    std::chrono::steady_clock::duration write{};
+    std::chrono::steady_clock::duration wait{};
+    size_t chunksProcessed = 0;
+
+    void Print(const char* label,
+               size_t eventsProcessed) const
+    {
+        using namespace std::chrono;
+        const double setupSec = duration<double>(setup).count();
+        const double fillSec = duration<double>(fill).count();
+        const double writeSec = duration<double>(write).count();
+        const double waitSec = duration<double>(wait).count();
+        const double totalSec = setupSec + fillSec + writeSec;
+
+        std::cout << "\n[" << label << " stage timings]\n"
+                  << "  setup/init       : " << setupSec << " s\n"
+                  << "  fill             : " << fillSec << " s\n"
+                  << "  write            : " << writeSec << " s\n"
+                  << "  queue wait       : " << waitSec << " s\n"
+                  << "  subtotal         : " << totalSec << " s\n"
+                  << "  events processed : " << eventsProcessed << "\n"
+                  << "  chunks processed : " << chunksProcessed << "\n";
+    }
+};
+
+TTree* GetEventTreeFromMemFile(TMemFile* memFile)
+{
+    if (!memFile) {
+        return nullptr;
+    }
+    return dynamic_cast<TTree*>(memFile->Get("EventTree"));
+}
+
+size_t FillHistogramsFromEventTreeSequential(TTree* tree, HistogramRefs& refs)
+{
+    if (!tree) {
+        return 0;
+    }
+
+    std::vector<UShort_t>* ts = 0;
+    std::vector<UShort_t>* mod = 0;
+    std::vector<UShort_t>* ch = 0;
+    std::vector<UShort_t>* adc = 0;
+
+    tree->SetBranchAddress("Ts", &ts);
+    tree->SetBranchAddress("Mod", &mod);
+    tree->SetBranchAddress("Ch", &ch);
+    tree->SetBranchAddress("Adc", &adc);
+
+    const Long64_t nentries = tree->GetEntries();
+    size_t processed = 0;
+
+    for (Long64_t entry = 0; entry < nentries; ++entry) {
+        tree->GetEntry(entry);
+        const BuiltEventView event{*ts, *mod, *ch, *adc};
+        FillHistograms(refs, event);
+        ++processed;
+    }
+
+    return processed;
 }
 
 }
@@ -185,6 +255,9 @@ void FillHistogramsFromEventTree(TTree* tree,
         return;
     }
 
+    HistogramStageTimers timers;
+    std::atomic<size_t> eventsProcessed{0};
+
     if (nthreads <= 1) {
         std::vector<UShort_t>* ts = 0;
         std::vector<UShort_t>* mod = 0;
@@ -196,21 +269,30 @@ void FillHistogramsFromEventTree(TTree* tree,
         tree->SetBranchAddress("Ch", &ch);
         tree->SetBranchAddress("Adc", &adc);
 
+        const auto setupStart = std::chrono::steady_clock::now();
         HistogramRefs refs = histograms.ResolveHistogramRefs();
+        timers.setup += std::chrono::steady_clock::now() - setupStart;
         Long64_t nentries = tree->GetEntries();
 
+        const auto fillStart = std::chrono::steady_clock::now();
         for (Long64_t entry = 0; entry < nentries; ++entry) {
             tree->GetEntry(entry);
             const BuiltEventView event{*ts, *mod, *ch, *adc};
             FillHistograms(refs, event);
+            ++eventsProcessed;
         }
+        timers.fill += std::chrono::steady_clock::now() - fillStart;
+        timers.Print("FillHistogramsFromEventTree", eventsProcessed.load());
         return;
     }
 
+    const auto setupStart = std::chrono::steady_clock::now();
     ROOT::EnableImplicitMT(nthreads);
     ROOT::TTreeProcessorMT processor(*tree, nthreads);
+    timers.setup += std::chrono::steady_clock::now() - setupStart;
 
-    processor.Process([&histograms](TTreeReader& reader) {
+    const auto fillStart = std::chrono::steady_clock::now();
+    processor.Process([&histograms, &eventsProcessed](TTreeReader& reader) {
         TTreeReaderValue<std::vector<UShort_t>> ts(reader, "Ts");
         TTreeReaderValue<std::vector<UShort_t>> mod(reader, "Mod");
         TTreeReaderValue<std::vector<UShort_t>> ch(reader, "Ch");
@@ -220,16 +302,70 @@ void FillHistogramsFromEventTree(TTree* tree,
         while (reader.Next()) {
             const BuiltEventView event{*ts, *mod, *ch, *adc};
             FillHistograms(refs, event);
+            ++eventsProcessed;
         }
     });
+    timers.fill += std::chrono::steady_clock::now() - fillStart;
+    timers.Print("FillHistogramsFromEventTree", eventsProcessed.load());
 }
 
 void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
                                        ThreadedHistogramSet& histograms,
                                        unsigned int nthreads)
 {
+    HistogramStageTimers timers;
+    std::atomic<size_t> eventsProcessed{0};
+
+    const auto setupStart = std::chrono::steady_clock::now();
     ROOT::EnableThreadSafety();
     histograms.ResolveHistogramRefs();
+    timers.setup += std::chrono::steady_clock::now() - setupStart;
+
+    unsigned int workerCount = nthreads;
+    if (workerCount == 0) {
+        workerCount = std::thread::hardware_concurrency();
+    }
+    if (workerCount == 0) {
+        workerCount = 1;
+    }
+
+    std::vector<std::thread> workers;
+    workers.reserve(workerCount);
+
+    const auto fillStart = std::chrono::steady_clock::now();
+    for (unsigned int i = 0; i < workerCount; ++i) {
+        workers.push_back(std::thread([&queue, &histograms, &eventsProcessed]() {
+            BuiltEvent event;
+            HistogramRefs refs = histograms.ResolveHistogramRefs();
+            while (queue.pop(event)) {
+                FillHistograms(refs, MakeBuiltEventView(event));
+                ++eventsProcessed;
+                event.Clear();
+            }
+        }));
+    }
+
+    for (size_t i = 0; i < workers.size(); ++i) {
+        workers[i].join();
+    }
+    timers.fill += std::chrono::steady_clock::now() - fillStart;
+    timers.Print("FillHistogramsFromBuiltEventQueue", eventsProcessed.load());
+}
+
+void FillHistogramsFromEventTreeQueue(ThreadSafeQueue<TMemFile*>& queue,
+                                      ThreadedHistogramSet& histograms,
+                                      unsigned int nthreads)
+{
+    HistogramStageTimers timers;
+    std::atomic<size_t> eventsProcessed{0};
+    std::atomic<size_t> chunksProcessed{0};
+    std::atomic<long long> queueWaitNs{0};
+    std::atomic<long long> fillNs{0};
+
+    const auto setupStart = std::chrono::steady_clock::now();
+    ROOT::EnableThreadSafety();
+    histograms.ResolveHistogramRefs();
+    timers.setup += std::chrono::steady_clock::now() - setupStart;
 
     unsigned int workerCount = nthreads;
     if (workerCount == 0) {
@@ -243,19 +379,78 @@ void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
     workers.reserve(workerCount);
 
     for (unsigned int i = 0; i < workerCount; ++i) {
-        workers.push_back(std::thread([&queue, &histograms]() {
-            BuiltEvent event;
+        workers.push_back(std::thread([&queue, &histograms, &eventsProcessed, &chunksProcessed, &queueWaitNs, &fillNs]() {
             HistogramRefs refs = histograms.ResolveHistogramRefs();
-            while (queue.pop(event)) {
-                FillHistograms(refs, MakeBuiltEventView(event));
-                event.Clear();
+            TMemFile* memFile = nullptr;
+
+            while (true) {
+                const auto waitStart = std::chrono::steady_clock::now();
+                const bool ok = queue.pop(memFile);
+                queueWaitNs.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                          std::chrono::steady_clock::now() - waitStart)
+                                          .count(),
+                                      std::memory_order_relaxed);
+                if (!ok) {
+                    break;
+                }
+
+                const auto fillStart = std::chrono::steady_clock::now();
+                TTree* tree = GetEventTreeFromMemFile(memFile);
+                eventsProcessed += FillHistogramsFromEventTreeSequential(tree, refs);
+                fillNs.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                     std::chrono::steady_clock::now() - fillStart)
+                                     .count(),
+                                 std::memory_order_relaxed);
+                ++chunksProcessed;
+                delete memFile;
+                memFile = nullptr;
             }
         }));
     }
 
-    for (size_t i = 0; i < workers.size(); ++i) {
-        workers[i].join();
+    for (std::thread& worker : workers) {
+        worker.join();
     }
+    timers.fill += std::chrono::nanoseconds(fillNs.load());
+    timers.wait += std::chrono::nanoseconds(queueWaitNs.load());
+    timers.chunksProcessed = chunksProcessed.load();
+    timers.Print("FillHistogramsFromEventTreeQueue", eventsProcessed.load());
+}
+
+void FillHistogramsFromEventTreeQueueUsingExistingFunction(ThreadSafeQueue<TMemFile*>& queue,
+                                                           ThreadedHistogramSet& histograms,
+                                                           unsigned int nthreads)
+{
+    HistogramStageTimers timers;
+    std::atomic<size_t> eventsProcessed{0};
+
+    const auto setupStart = std::chrono::steady_clock::now();
+    ROOT::EnableThreadSafety();
+    timers.setup += std::chrono::steady_clock::now() - setupStart;
+
+    const auto fillStart = std::chrono::steady_clock::now();
+    TMemFile* memFile = nullptr;
+    bool warnedAboutMemFileMT = false;
+    while (queue.pop(memFile)) {
+        TTree* tree = GetEventTreeFromMemFile(memFile);
+        if (tree) {
+            eventsProcessed += static_cast<size_t>(tree->GetEntries());
+            unsigned int treeThreads = nthreads;
+            if (treeThreads > 1 && dynamic_cast<TMemFile*>(tree->GetCurrentFile()) != nullptr) {
+                if (!warnedAboutMemFileMT) {
+                    std::cout << "FillHistogramsFromEventTree unchanged path cannot use TTreeProcessorMT "
+                              << "on TMemFile chunks; falling back to single-thread chunk reads.\n";
+                    warnedAboutMemFileMT = true;
+                }
+                treeThreads = 1;
+            }
+            FillHistogramsFromEventTree(tree, histograms, treeThreads);
+        }
+        delete memFile;
+        memFile = nullptr;
+    }
+    timers.fill += std::chrono::steady_clock::now() - fillStart;
+    timers.Print("FillHistogramsFromEventTreeQueueUsingExistingFunction", eventsProcessed.load());
 }
 
 bool WriteHistogramFile(ThreadedHistogramSet& histograms,
@@ -273,10 +468,14 @@ bool WriteHistogramFile(ThreadedHistogramSet& histograms,
         return false;
     }
 
+    HistogramStageTimers timers;
+    const auto writeStart = std::chrono::steady_clock::now();
     outfile->cd();
     histograms.WriteAll(outfile);
     outfile->Write("", TObject::kOverwrite);
+    timers.write += std::chrono::steady_clock::now() - writeStart;
     outfile->Close();
     delete outfile;
+    timers.Print("WriteHistogramFile", 0);
     return true;
 }
