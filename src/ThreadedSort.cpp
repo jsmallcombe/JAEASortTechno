@@ -1,4 +1,6 @@
-#include <MergedThread.h>
+#include <ThreadedSort.h>
+#include <FillHistograms.h>
+#include <IO.h>
 
 namespace {
 
@@ -283,8 +285,7 @@ void ThreadedQueueToEventTreeAndBuiltEventQueue(ThreadSafeQueue<std::vector<Even
 }
 
 
-
-int ThreadSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int QueueSize, int BufferSize ) {
+int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int QueueSize, int BufferSize ) {
     
     const size_t MAX_QUEUE = QueueSize; 
     const int CHUNK_SIZE = CHUNK;
@@ -292,7 +293,6 @@ int ThreadSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* ou
     const size_t TDIFF = tdiff;
     
     std::atomic<bool> done_flag{false};
-    
     
     ThreadSafeQueue<std::vector<Event>> queue(MAX_QUEUE);
     
@@ -323,42 +323,201 @@ int ThreadSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* ou
     return 0;
 }
 
+void MakeEventTreeFromBin(TString infilename,
+                          TString outfilename,
+                          Long64_t tdiff,
+                          int CHUNK,
+                          int QueueSize,
+                          int BufferSize,
+                          Long64_t TS_TOLERANCE)
+{
+    std::vector<std::unique_ptr<DigitiserBase>> digitisers = BuildDigitiserList(infilename);
 
-
-void MakeEventTreeFromBin(TString infilename,TString outfilename,Long64_t tdiff,int CHUNK,int QueueSize,int BufferSize,Long64_t TS_TOLERANCE){
-    
-    std::vector<std::unique_ptr<DigitiserBase>> digitisers=BuildDigitiserList(infilename);
-    
     DigitiserBase::SetTsTolerance(TS_TOLERANCE);
-    
-    
-    // Start timer
-    TStopwatch timer;
-    timer.Start();
-    
+
     if(!outfilename.Length())outfilename=infilename + "_events.root";
     TFile *outfile = new TFile(outfilename,"RECREATE");
     TTree *outtree = new TTree("EventTree","EventTree");
-    
-    // ROOT auto file splitting (~1.9 GB safe)
+
     outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
-    // Removes autosave in the case of crash, but removes duplicate TTree keys
     outtree->SetAutoSave(0);
-    
-    ThreadSort(digitisers,outtree,tdiff,CHUNK,QueueSize,BufferSize);
-        
-        
+
+    ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, QueueSize, BufferSize);
+
     TFile* currentFile = outtree->GetCurrentFile();
     if (currentFile) {
         currentFile->Write("", TObject::kOverwrite);
         currentFile->Close();
     }
-    
-    std::cout << "\nDone\n";
-    
-    timer.Stop();
-    Double_t rtime = timer.RealTime();
-    Double_t ctime = timer.CpuTime();
-    std::cout << Form("\n RealTime = %d seconds, CpuTime = %d seconds\n\n",(Int_t)rtime,(Int_t)ctime );
+
+    delete outtree;
+    delete outfile;
 }
 
+int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
+                                      TString histogramOutfilename,
+                                      Long64_t tdiff,
+                                      unsigned int histWorkers,
+                                      int CHUNK,
+                                      int QueueSize,
+                                      int BufferSize,
+                                      Long64_t TS_TOLERANCE,
+                                      TString treeOutfilename)
+{
+    DigitiserBase::SetTsTolerance(TS_TOLERANCE);
+
+    const bool writeTree = treeOutfilename.Length() > 0;
+    const size_t maxQueue = QueueSize;
+    const size_t bufferTarget = BufferSize;
+    const size_t chunkSize = CHUNK;
+
+    std::unique_ptr<TFile> treeFile;
+    TTree* tree = nullptr;
+
+    if (writeTree) {
+        treeFile.reset(TFile::Open(treeOutfilename, "RECREATE"));
+        if (!treeFile || treeFile->IsZombie()) {
+            std::cerr << "Could not create output tree file " << treeOutfilename << '\n';
+            return 5;
+        }
+
+        tree = new TTree("EventTree", "EventTree");
+        tree->SetDirectory(treeFile.get());
+        tree->SetMaxTreeSize(1900LL * 1024 * 1024);
+        tree->SetAutoSave(0);
+    }
+
+    ThreadSafeQueue<std::vector<Event>> rawQueue(maxQueue);
+    ThreadSafeQueue<BuiltEvent> builtQueue(maxQueue);
+    std::atomic<bool> doneFlag{false};
+
+    std::thread monitorThread(QueueMonitorThread,
+                              std::ref(rawQueue),
+                              maxQueue,
+                              bufferTarget,
+                              std::ref(doneFlag));
+
+    std::thread producerThread(BinToThreadedQueue,
+                               std::ref(rawQueue),
+                               std::ref(digitisers),
+                               chunkSize);
+
+    std::thread builderThread(writeTree
+                                  ? std::thread(ThreadedQueueToEventTreeAndBuiltEventQueue,
+                                                std::ref(rawQueue),
+                                                tree,
+                                                std::ref(builtQueue),
+                                                tdiff,
+                                                bufferTarget)
+                                  : std::thread(ThreadedQueueToBuiltEventQueue,
+                                                std::ref(rawQueue),
+                                                std::ref(builtQueue),
+                                                tdiff,
+                                                bufferTarget));
+
+    ThreadedHistogramSet histograms;
+    FillHistogramsFromBuiltEventQueue(builtQueue, histograms, histWorkers);
+
+    producerThread.join();
+    builderThread.join();
+    doneFlag = true;
+    monitorThread.join();
+
+    if (writeTree && tree != nullptr) {
+        TFile* currentFile = tree->GetCurrentFile();
+        if (currentFile) {
+            currentFile->Write("", TObject::kOverwrite);
+            currentFile->Close();
+        }
+        delete tree;
+    }
+
+    if (!WriteHistogramFile(histograms, histogramOutfilename, true)) {
+        return 5;
+    }
+
+    if (writeTree) {
+        std::cout << "Wrote event tree to " << treeOutfilename << '\n';
+    }
+    std::cout << "Wrote histograms to " << histogramOutfilename << '\n';
+    return 0;
+}
+
+int ThreadedSort(TChain* eventData,
+                 TString histogramOutfilename,
+                 unsigned int histWorkers,
+                 bool overwrite)
+{
+    if (!eventData) {
+        return 0;
+    }
+    if (!TestOutputPath(histogramOutfilename, overwrite, "Histogram")) {
+        return 3;
+    }
+
+    ThreadedHistogramSet histograms;
+    FillHistogramsFromEventTree(eventData, histograms, histWorkers);
+
+    if (!WriteHistogramFile(histograms, histogramOutfilename, true)) {
+        return 4;
+    }
+
+    std::cout << "Wrote histograms to " << histogramOutfilename << '\n';
+    return 0;
+}
+
+int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
+                 TString eventTreeOutfilename,
+                 TString histogramOutfilename,
+                 Long64_t tdiff,
+                 bool overwrite,
+                 bool writeTree,
+                 bool doHistSort,
+                 unsigned int histWorkers,
+                 int CHUNK,
+                 int QueueSize,
+                 int BufferSize,
+                 Long64_t TS_TOLERANCE)
+{
+    if (!writeTree && !doHistSort) {
+        return 0;
+    }
+
+    if (writeTree && !TestOutputPath(eventTreeOutfilename, overwrite, "TTree")) {
+        return 3;
+    }
+    if (doHistSort && !TestOutputPath(histogramOutfilename, overwrite, "Histogram")) {
+        return 4;
+    }
+
+    if (writeTree && !doHistSort) {
+        DigitiserBase::SetTsTolerance(TS_TOLERANCE);
+
+        TFile *outfile = new TFile(eventTreeOutfilename,"RECREATE");
+        TTree *outtree = new TTree("EventTree","EventTree");
+
+        outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
+        outtree->SetAutoSave(0);
+
+        ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, QueueSize, BufferSize);
+
+        TFile* currentFile = outtree->GetCurrentFile();
+        if (currentFile) {
+            currentFile->Write("", TObject::kOverwrite);
+            currentFile->Close();
+        }
+        delete outtree;
+        delete outfile;
+        return 0;
+    }
+
+    return MakeEventTreeAndHistogramsFromBin(digitisers,
+                                             histogramOutfilename,
+                                             tdiff,
+                                             histWorkers,
+                                             CHUNK,
+                                             QueueSize,
+                                             BufferSize,
+                                             TS_TOLERANCE,
+                                             writeTree ? eventTreeOutfilename : "");
+}

@@ -536,6 +536,29 @@ TString StripFileName(TString str){
 
         return fileName;
 }
+
+bool TestOutputPath(const TString& filename, bool overwrite, const char* label)
+{
+    if (filename.Length() == 0) {
+        std::cerr << "Missing " << label << " output filename\n";
+        return false;
+    }
+
+    const std::filesystem::path outputPath(filename.Data());
+    const std::filesystem::path parentPath = outputPath.parent_path();
+
+    if (!parentPath.empty() && !std::filesystem::exists(parentPath)) {
+        std::filesystem::create_directories(parentPath);
+    }
+
+    if (std::filesystem::exists(outputPath) && !overwrite) {
+        std::cerr << label << " output already exists: " << filename
+                  << " (use -O to overwrite)\n";
+        return false;
+    }
+
+    return true;
+}
  
 void JAEASortIO::ProcessOption(TString str){
         // A special argument, read the next item out of order of normal processing loop

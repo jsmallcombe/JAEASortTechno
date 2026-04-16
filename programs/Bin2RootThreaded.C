@@ -1,5 +1,7 @@
-	
-#include <MergedThread.h>
+#include <ThreadedSort.h>
+
+#include <TStopwatch.h>
+
 
 int main(int argc, char** argv)
 {
@@ -16,8 +18,19 @@ int main(int argc, char** argv)
     int BufferSize      = (argc > 5) ? std::stoi(argv[5]) : -1;
     
     try {
+        TStopwatch timer;
+        timer.Start();
+
         //         MakeEventTreeFromBin(infilename, outfilename, chainmode, tdiff, BufferSize);
-        MakeEventTreeFromBin(infilename, outfilename);
+        MakeEventTreeFromBin(infilename, outfilename, tdiff, gBinChunkDefaultSize, gThreadQueueChunks, BufferSize);
+
+        timer.Stop();
+        Double_t rtime = timer.RealTime();
+        Double_t ctime = timer.CpuTime();
+        std::cout << "\nDone\n";
+        std::cout << Form("\n RealTime = %d seconds, CpuTime = %d seconds\n\n",
+                          (Int_t)rtime,
+                          (Int_t)ctime );
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 2;
@@ -25,4 +38,3 @@ int main(int argc, char** argv)
     
     return 0;
 }
-

@@ -117,5 +117,6 @@ void ReadCal(string filename="cal.txt");
 bool stringToInt(const std::string& str, int& result);
 
 TString StripFileName(TString str);
+bool TestOutputPath(const TString& filename, bool overwrite = false, const char* label = "Output");
 	
 #endif

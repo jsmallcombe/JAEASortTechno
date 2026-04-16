@@ -1,7 +1,9 @@
 #include <FillHistograms.h>
 
 #include <ROOT/TTreeProcessorMT.hxx>
+#include <IO.h>
 #include <Detectors.h>
+#include <TFile.h>
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
@@ -251,4 +253,27 @@ void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
     for (size_t i = 0; i < workers.size(); ++i) {
         workers[i].join();
     }
+}
+
+bool WriteHistogramFile(ThreadedHistogramSet& histograms,
+                        const TString& outfilename,
+                        bool overwrite)
+{
+    if (!TestOutputPath(outfilename, overwrite, "Histogram")) {
+        return false;
+    }
+
+    TFile* outfile = TFile::Open(outfilename, "RECREATE");
+    if (!outfile || outfile->IsZombie()) {
+        std::cerr << "Could not create histogram output file " << outfilename << '\n';
+        delete outfile;
+        return false;
+    }
+
+    outfile->cd();
+    histograms.WriteAll(outfile);
+    outfile->Write("", TObject::kOverwrite);
+    outfile->Close();
+    delete outfile;
+    return true;
 }
