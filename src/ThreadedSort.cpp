@@ -338,6 +338,7 @@ void MakeEventTreeFromBin(TString infilename,
     if(!outfilename.Length())outfilename=infilename + "_events.root";
     TFile *outfile = new TFile(outfilename,"RECREATE");
     TTree *outtree = new TTree("EventTree","EventTree");
+    outtree->SetDirectory(outfile);
 
     outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
     outtree->SetAutoSave(0);
@@ -349,9 +350,6 @@ void MakeEventTreeFromBin(TString infilename,
         currentFile->Write("", TObject::kOverwrite);
         currentFile->Close();
     }
-
-    delete outtree;
-    delete outfile;
 }
 
 int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
@@ -429,7 +427,6 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
             currentFile->Write("", TObject::kOverwrite);
             currentFile->Close();
         }
-        delete tree;
     }
 
     if (!WriteHistogramFile(histograms, histogramOutfilename, true)) {
@@ -495,6 +492,7 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
 
         TFile *outfile = new TFile(eventTreeOutfilename,"RECREATE");
         TTree *outtree = new TTree("EventTree","EventTree");
+        outtree->SetDirectory(outfile);
 
         outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
         outtree->SetAutoSave(0);
@@ -506,8 +504,6 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
             currentFile->Write("", TObject::kOverwrite);
             currentFile->Close();
         }
-        delete outtree;
-        delete outfile;
         return 0;
     }
 
