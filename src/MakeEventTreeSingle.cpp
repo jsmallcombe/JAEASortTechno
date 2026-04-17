@@ -1,40 +1,5 @@
 #include <MakeEventTreeSingle.h>
 
-#include <chrono>
-
-namespace {
-
-struct BuildStageTimers {
-    std::chrono::steady_clock::duration refill{};
-    std::chrono::steady_clock::duration sort{};
-    std::chrono::steady_clock::duration sink{};
-
-    void Print(const char* label,
-               size_t eventsRead,
-               size_t eventsBuilt,
-               size_t maxBuffered) const
-    {
-        using namespace std::chrono;
-        const double refillSec = duration<double>(refill).count();
-        const double sortSec = duration<double>(sort).count();
-        const double sinkSec = duration<double>(sink).count();
-        const double totalSec = refillSec + sortSec + sinkSec;
-        const double bufferMiB = (maxBuffered * sizeof(Event)) / (1024.0 * 1024.0);
-
-        std::cout << "\n[" << label << " stage timings]\n"
-                  << "  refill/read      : " << refillSec << " s\n"
-                  << "  sort/merge       : " << sortSec << " s\n"
-                  << "  build/sink       : " << sinkSec << " s\n"
-                  << "  subtotal         : " << totalSec << " s\n"
-                  << "  events read      : " << eventsRead << "\n"
-                  << "  events built     : " << eventsBuilt << "\n"
-                  << "  max buffered     : " << maxBuffered
-                  << " (" << bufferMiB << " MiB of Event storage)\n";
-    }
-};
-
-}
-
 
 // =========================
 // Core TChain processing
@@ -71,10 +36,6 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
     // Buffer
     std::vector<Event> buffer;
     buffer.reserve(BUFFER);  // avoid reallocations
-    BuildStageTimers timers;
-    size_t maxBuffered = 0;
-    size_t builtCount = 0;
-    
     // Event logic
     Long64_t firstTs = -1;
     Long64_t lastTs  = -1;
@@ -87,18 +48,12 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
     // Fill function
     // =========================
     auto FillBuffer = [&](size_t nFill) {
-        const auto refillStart = std::chrono::steady_clock::now();
-        
         size_t added = 0;
         
         while (added < nFill && entry < n) {
             chain->GetEntry(entry++);
             buffer.push_back({tTs, tMod, tCh, tAdc});
             added++;
-        }
-        timers.refill += std::chrono::steady_clock::now() - refillStart;
-        if (buffer.size() > maxBuffered) {
-            maxBuffered = buffer.size();
         }
         return added;
     };
@@ -109,12 +64,10 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
     // =========================    
     FillBuffer(BUFFER_TARGET);
     
-    auto sortStart = std::chrono::steady_clock::now();
     std::sort(buffer.begin(), buffer.end(),
               [](const Event& a, const Event& b){
                   return a.ts < b.ts;
               });
-    timers.sort += std::chrono::steady_clock::now() - sortStart;
     
     size_t start = 0;   // logical start of valid data
     size_t idx   = 0;   // absolute index into buffer
@@ -173,10 +126,7 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
             else {
                 
                 // EVENT COMPLETE
-                auto sinkStart = std::chrono::steady_clock::now();
                 outtree->Fill();
-                timers.sink += std::chrono::steady_clock::now() - sinkStart;
-                ++builtCount;
                 
                 tTs_vec.clear();
                 tMod_vec.clear();
@@ -218,7 +168,6 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
                 auto base = buffer.begin() + idx;
                 
                 // Sort ONLY new elements
-                sortStart = std::chrono::steady_clock::now();
                 std::sort(base + old_size,
                           base + new_size,
                           [](const Event& a, const Event& b){
@@ -229,7 +178,6 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
                 std::inplace_merge(base,
                                    base + old_size,
                                    base + new_size);
-                timers.sort += std::chrono::steady_clock::now() - sortStart;
             }
             
             popCount = 0;
@@ -248,13 +196,8 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
     }
     
     if (!tTs_vec.empty()) {
-        auto sinkStart = std::chrono::steady_clock::now();
         outtree->Fill();
-        timers.sink += std::chrono::steady_clock::now() - sinkStart;
-        ++builtCount;
     }
-
-    timers.Print("ProcessChainBufferedDefault", entry, builtCount, maxBuffered);
 }
 
 

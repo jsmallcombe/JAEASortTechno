@@ -3,7 +3,6 @@
 
 #include <TFile.h>
 #include <TChain.h>
-#include <TMemFile.h>
 #include <TTree.h>
 #include <TString.h>
 #include <TStopwatch.h>
@@ -63,7 +62,7 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                     TTree* outtree,
                     Long64_t tdiff=gTS_Diff,
                     int CHUNK = gBinChunkDefaultSize,
-                    int QueueSize = gThreadQueueChunks,
+                    int QueueSize = gThreadQueueBuiltEvents,
                     int BufferSize=gBuildBuffDefaultSize);
 
 // Convenience entry point for building only an EventTree from a bin stem.
@@ -73,24 +72,24 @@ void MakeEventTreeFromBin(TString infilename,
                         TString outfilename="",
                         Long64_t tdiff=gTS_Diff,
                         int CHUNK = gBinChunkDefaultSize,
-                        int QueueSize = gThreadQueueChunks,
+                        int QueueSize = gThreadQueueBuiltEvents,
                         int BufferSize=gBuildBuffDefaultSize,
                         Long64_t TS_TOLERANCE = gTS_TOLERANCE);
 
 // Convenience entry point for the combined bin-to-tree and/or histogram path.
 // Uses an existing digitiser list and runs the direct raw-bin event builder,
-// always writing the EventTree while optionally handing completed in-memory
-// EventTree chunks to histogram workers for concurrent histogram sorting.
+// always writing the EventTree while optionally handing completed built-event
+// chunks to histogram workers for concurrent histogram sorting.
 int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                                       TString histogramOutfilename,
                                       Long64_t tdiff = gTS_Diff,
                                       unsigned int histWorkers = 0,
                                       int CHUNK = gBinChunkDefaultSize,
-                                      int QueueSize = gThreadQueueChunks,
+                                      int QueueSize = gThreadQueueBuiltEvents,
                                       int BufferSize = gBuildBuffDefaultSize,
                                       Long64_t TS_TOLERANCE = gTS_TOLERANCE,
                                       TString treeOutfilename = "",
-                                      Long64_t histTreeChunkBytes = 500LL * 1024 * 1024,
+                                      Long64_t histChunkEvents = 100000,
                                       EventTreeQueueHistMode histTreeMode = EventTreeQueueHistMode::PersistentWorkers);
 
 // High-level threaded histogram sort for an existing EventTree/TChain input.
@@ -113,10 +112,10 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  bool doHistSort = false,
                  unsigned int histWorkers = 0,
                  int CHUNK = gBinChunkDefaultSize,
-                 int QueueSize = gThreadQueueChunks,
+                 int QueueSize = gThreadQueueBuiltEvents,
                  int BufferSize = gBuildBuffDefaultSize,
                  Long64_t TS_TOLERANCE = gTS_TOLERANCE,
-                 Long64_t histTreeChunkBytes = 500LL * 1024 * 1024,
+                 Long64_t histChunkEvents = 100000,
                  EventTreeQueueHistMode histTreeMode = EventTreeQueueHistMode::PersistentWorkers);
 
     

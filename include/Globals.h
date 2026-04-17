@@ -10,7 +10,7 @@
 
 constexpr size_t gBuildBuffDefaultSize=2'000'000;
 constexpr size_t gBinChunkDefaultSize=100;
-constexpr size_t gThreadQueueChunks=10000;
+constexpr size_t gThreadQueueBuiltEvents=32'000'000;
 constexpr Long64_t gTS_TOLERANCE = 100000;
 constexpr Long64_t gTS_Diff = 2000;
 

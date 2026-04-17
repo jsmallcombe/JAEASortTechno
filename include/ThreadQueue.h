@@ -20,6 +20,7 @@ inline std::atomic<size_t> g_idx{0};
 inline std::atomic<size_t> g_popCount{0};
 inline std::atomic<size_t> g_ReadCount{0};
 inline std::atomic<size_t> g_BuiltCount{0};
+inline std::atomic<size_t> g_QueuedBuiltEvents{0};
 
 template<typename T>
 class ThreadSafeQueue {
@@ -119,5 +120,7 @@ std::string make_buffer_bar(size_t size,size_t max,size_t idx,size_t pop,size_t 
 std::string make_queue_bar(size_t size,size_t max, size_t width = 20);
 
 void QueueMonitorThread(ThreadSafeQueue<std::vector<Event>>& queue, size_t MAX_QUEUE, size_t BUFFERSIZE, std::atomic<bool>& done_flag);
+
+void BuildMonitorThread(size_t builtEventBudget, size_t bufferSize, std::atomic<bool>& done_flag);
 
 #endif

@@ -1,7 +1,5 @@
 #include <Bin2RootClassy.h>
 
-#include <chrono>
-
 // =========================
 // Global chunk reader
 // =========================
@@ -76,10 +74,6 @@ std::vector<std::unique_ptr<DigitiserBase>> digitisers=BuildDigitiserList(run);
     
     
     Long64_t globalMaxTs = -1;
-    size_t eventsRead = 0;
-    size_t acceptedChunks = 0;
-    auto readStageStart = std::chrono::steady_clock::now();
-
     bool anyActive = true;
 
     while (anyActive) {
@@ -93,16 +87,11 @@ std::vector<std::unique_ptr<DigitiserBase>> digitisers=BuildDigitiserList(run);
 
             while (!accepted) {
 
-                const Long64_t entriesBefore = fOutT->GetEntries();
                 if (!readChunk(digi, CHUNK_SIZE, fOutT, ev)) {
                     break;
                 }
-                const Long64_t entriesAfter = fOutT->GetEntries();
 
                 anyActive = true;
-                acceptedChunks++;
-                eventsRead += static_cast<size_t>(entriesAfter - entriesBefore);
-
                 Long64_t digiTs = digi.getLastTs();
 
                 if (globalMaxTs < 0 || digiTs >= globalMaxTs) {
@@ -113,10 +102,6 @@ std::vector<std::unique_ptr<DigitiserBase>> digitisers=BuildDigitiserList(run);
             }
         }
     }
-    auto readStageStop = std::chrono::steady_clock::now();
-    
-
-    
     // Get current tree file BEFORE closing anything
     TFile* currentFile = fOutT->GetCurrentFile();
 
@@ -135,12 +120,6 @@ std::vector<std::unique_ptr<DigitiserBase>> digitisers=BuildDigitiserList(run);
     }
 
     std::cout << "Finished processing " << run << std::endl;
-    std::cout << "[Bin2RootClassy stage timings]\n"
-              << "  raw read/write    : "
-              << std::chrono::duration<double>(readStageStop - readStageStart).count()
-              << " s\n"
-              << "  accepted chunks   : " << acceptedChunks << "\n"
-              << "  nominal events    : " << eventsRead << "\n";
     
     timer.Stop();
     Double_t rtime = timer.RealTime();

@@ -57,70 +57,15 @@ void BindBuiltEventTreeBranches(TTree* tree, BuiltEvent& event)
     tree->Branch("Adc", &event.Adc);
 }
 
-TMemFile* CreateEventTreeChunk(unsigned int chunkIndex, EventTreeBuffers& event)
+BuiltEventChunkBuffer* CreateBuiltEventChunkBuffer(EventTreeBuffers& event)
 {
-    TString memName;
-    memName.Form("EventTreeChunk_%u.root", chunkIndex);
-
-    TMemFile* memFile = new TMemFile(memName, "RECREATE");
-    TTree* tree = new TTree("EventTree", "EventTree");
-    tree->SetDirectory(memFile);
-    tree->SetAutoSave(0);
-    BindBuiltEventTreeBranches(tree, event);
-    return memFile;
+    BuiltEventChunkBuffer* chunk = new BuiltEventChunkBuffer();
+    chunk->Branch("Ts", &event.Ts);
+    chunk->Branch("Mod", &event.Mod);
+    chunk->Branch("Ch", &event.Ch);
+    chunk->Branch("Adc", &event.Adc);
+    return chunk;
 }
-
-void FinalizeEventTreeChunk(TMemFile* memFile)
-{
-    if (!memFile) {
-        return;
-    }
-    TTree* tree = dynamic_cast<TTree*>(memFile->Get("EventTree"));
-    if (tree) {
-        tree->FlushBaskets();
-    }
-    memFile->Write("", TObject::kOverwrite);
-}
-
-struct BuildStageTimers {
-    std::chrono::steady_clock::duration refill{};
-    std::chrono::steady_clock::duration sort{};
-    std::chrono::steady_clock::duration sink{};
-    std::chrono::steady_clock::duration diskTreeFill{};
-    std::chrono::steady_clock::duration chunkTreeFill{};
-    std::chrono::steady_clock::duration chunkFinalize{};
-    size_t chunkCount = 0;
-
-    void Print(const char* label,
-               size_t eventsRead,
-               size_t eventsBuilt,
-               size_t maxBuffered) const
-    {
-        using namespace std::chrono;
-        const double refillSec = duration<double>(refill).count();
-        const double sortSec = duration<double>(sort).count();
-        const double sinkSec = duration<double>(sink).count();
-        const double diskTreeFillSec = duration<double>(diskTreeFill).count();
-        const double chunkTreeFillSec = duration<double>(chunkTreeFill).count();
-        const double chunkFinalizeSec = duration<double>(chunkFinalize).count();
-        const double totalSec = refillSec + sortSec + sinkSec;
-        const double bufferMiB = (maxBuffered * sizeof(Event)) / (1024.0 * 1024.0);
-
-        std::cout << "\n[" << label << " stage timings]\n"
-                  << "  refill/arbitrate : " << refillSec << " s\n"
-                  << "  sort/merge       : " << sortSec << " s\n"
-                  << "  build/sink       : " << sinkSec << " s\n"
-                  << "  subtotal         : " << totalSec << " s\n"
-                  << "  disk tree fill   : " << diskTreeFillSec << " s\n"
-                  << "  chunk tree fill  : " << chunkTreeFillSec << " s\n"
-                  << "  chunk finalize   : " << chunkFinalizeSec << " s\n"
-                  << "  events read      : " << eventsRead << "\n"
-                  << "  events built     : " << eventsBuilt << "\n"
-                  << "  chunk count      : " << chunkCount << "\n"
-                  << "  max buffered     : " << maxBuffered
-                  << " (" << bufferMiB << " MiB of Event storage)\n";
-    }
-};
 
 template <typename EventWriter>
 void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
@@ -142,16 +87,12 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
     Long64_t globalMaxTs = -1;
     bool inputFinished = false;
-    BuildStageTimers timers;
-    size_t maxBuffered = 0;
 
     // =========================
     // FillBuffer replacement
     // =========================
     auto FillBuffer = [&](size_t nFill) {
         size_t added = 0;
-        const auto refillStart = std::chrono::steady_clock::now();
-
         while (added < nFill && !inputFinished) {
             bool anyActive = false;
 
@@ -202,10 +143,6 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             }
         }
 
-        timers.refill += std::chrono::steady_clock::now() - refillStart;
-        if (buffer.size() > maxBuffered) {
-            maxBuffered = buffer.size();
-        }
         return added;
     };
 
@@ -214,12 +151,10 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
     readCount += FillBuffer(BUFFER_TARGET);
 
-    auto sortStart = std::chrono::steady_clock::now();
     std::sort(buffer.begin(), buffer.end(),
               [](const Event& a, const Event& b) {
                   return a.ts < b.ts;
               });
-    timers.sort += std::chrono::steady_clock::now() - sortStart;
 
     Long64_t firstTs = -1;
     Long64_t lastTs = -1;
@@ -254,9 +189,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 lastTs = tTs_local;
             } else {
                 // EVENT COMPLETE
-                auto sinkStart = std::chrono::steady_clock::now();
                 writeEvent(eventBuffer);
-                timers.sink += std::chrono::steady_clock::now() - sinkStart;
                 ++builtCount;
 
                 // Start next event
@@ -283,7 +216,6 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 auto base = buffer.begin() + idx;
 
                 // Sort ONLY new elements
-                sortStart = std::chrono::steady_clock::now();
                 std::sort(base + old_size,
                           base + new_size,
                           [](const Event& a, const Event& b) {
@@ -294,7 +226,6 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 std::inplace_merge(base,
                                    base + old_size,
                                    base + new_size);
-                timers.sort += std::chrono::steady_clock::now() - sortStart;
             }
 
             popCount = 0;
@@ -318,12 +249,9 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
     }
 
     if (!eventBuffer.Empty()) {
-        auto sinkStart = std::chrono::steady_clock::now();
         writeEvent(eventBuffer);
-        timers.sink += std::chrono::steady_clock::now() - sinkStart;
         ++builtCount;
     }
-    timers.Print("BuildEventsFromDigitisers", readCount, builtCount, maxBuffered);
 }
 
 template <typename Sink>
@@ -583,8 +511,18 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TT
     const size_t CHUNK_SIZE = CHUNK;
     const size_t BUFFER_TARGET = BufferSize;
     const size_t TDIFF = tdiff;
+    std::atomic<bool> doneFlag{false};
     EventTreeBuffers treeEvent;
     BindBuiltEventTreeBranches(outtree, treeEvent);
+
+    g_buffer_size = 0;
+    g_idx = 0;
+    g_popCount = 0;
+    g_ReadCount = 0;
+    g_BuiltCount = 0;
+    g_QueuedBuiltEvents = 0;
+
+    std::thread monitorThread(BuildMonitorThread, 0, BUFFER_TARGET, std::ref(doneFlag));
 
     BuildEventsFromDigitisers(digitisers,
                               TDIFF,
@@ -594,6 +532,9 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TT
                               [&](EventTreeBuffers&) {
                                   outtree->Fill();
                               });
+
+    doneFlag = true;
+    monitorThread.join();
     
     return 0;
 }
@@ -636,7 +577,7 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       int BufferSize,
                                       Long64_t TS_TOLERANCE,
                                       TString treeOutfilename,
-                                      Long64_t histTreeChunkBytes,
+                                      Long64_t histChunkEvents,
                                       EventTreeQueueHistMode histTreeMode)
 {
     DigitiserBase::SetTsTolerance(TS_TOLERANCE);
@@ -645,7 +586,15 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
     const bool writeTree = treeOutfilename.Length() > 0;
     const size_t bufferTarget = BufferSize;
     const size_t chunkSize = CHUNK;
-    BuildStageTimers sinkBreakdown;
+    const size_t builtEventBudget = static_cast<size_t>(QueueSize);
+    const size_t chunkQueueCapacity = std::max<size_t>(1, builtEventBudget / std::max<Long64_t>(1, histChunkEvents));
+    std::atomic<bool> doneFlag{false};
+    g_buffer_size = 0;
+    g_idx = 0;
+    g_popCount = 0;
+    g_ReadCount = 0;
+    g_BuiltCount = 0;
+    g_QueuedBuiltEvents = 0;
 
     std::unique_ptr<TFile> treeFile;
     TTree* tree = nullptr;
@@ -663,17 +612,18 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
         tree->SetAutoSave(0);
     }
 
-    ThreadSafeQueue<TMemFile*> memTreeQueue(QueueSize);
+    ThreadSafeQueue<BuiltEventChunkBuffer*> chunkQueue(chunkQueueCapacity);
     ThreadedHistogramSet histograms;
+    std::thread monitorThread(BuildMonitorThread, builtEventBudget, bufferTarget, std::ref(doneFlag));
 
     std::thread histogramConsumer;
     if (histTreeMode == EventTreeQueueHistMode::PerChunkFillHistogramsFromEventTree) {
-        histogramConsumer = std::thread([&memTreeQueue, &histograms, histWorkers]() {
-            FillHistogramsFromEventTreeQueueUsingExistingFunction(memTreeQueue, histograms, histWorkers);
+        histogramConsumer = std::thread([&chunkQueue, &histograms, histWorkers]() {
+            FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(chunkQueue, histograms, histWorkers);
         });
     } else {
-        histogramConsumer = std::thread([&memTreeQueue, &histograms, histWorkers]() {
-            FillHistogramsFromEventTreeQueue(memTreeQueue, histograms, histWorkers);
+        histogramConsumer = std::thread([&chunkQueue, &histograms, histWorkers]() {
+            FillHistogramsFromBuiltEventChunkQueue(chunkQueue, histograms, histWorkers);
         });
     }
 
@@ -682,24 +632,15 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
         BindBuiltEventTreeBranches(tree, treeEvent);
     }
 
-    const Long64_t chunkTargetBytes = histTreeChunkBytes > 0 ? histTreeChunkBytes : (500LL * 1024 * 1024);
-    unsigned int chunkIndex = 0;
-    TMemFile* chunkFile = CreateEventTreeChunk(chunkIndex++, treeEvent);
-    TTree* chunkTree = dynamic_cast<TTree*>(chunkFile->Get("EventTree"));
-
-    size_t chunkEntries = 0;
+    const Long64_t chunkTargetEvents = histChunkEvents > 0 ? histChunkEvents : 100000;
+    BuiltEventChunkBuffer* chunkBuffer = CreateBuiltEventChunkBuffer(treeEvent);
     auto queueCompletedChunk = [&]() {
-        if (!chunkFile || chunkEntries == 0) {
+        if (!chunkBuffer || chunkBuffer->Empty()) {
             return;
         }
-        const auto finalizeStart = std::chrono::steady_clock::now();
-        FinalizeEventTreeChunk(chunkFile);
-        sinkBreakdown.chunkFinalize += std::chrono::steady_clock::now() - finalizeStart;
-        memTreeQueue.push(chunkFile);
-        ++sinkBreakdown.chunkCount;
-        chunkFile = nullptr;
-        chunkTree = nullptr;
-        chunkEntries = 0;
+        g_QueuedBuiltEvents.fetch_add(chunkBuffer->Size(), std::memory_order_relaxed);
+        chunkQueue.push(chunkBuffer);
+        chunkBuffer = nullptr;
     };
 
     BuildEventsFromDigitisers(digitisers,
@@ -709,28 +650,22 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                               treeEvent,
                               [&](EventTreeBuffers&) {
                                   if (writeTree && tree != nullptr) {
-                                      const auto diskFillStart = std::chrono::steady_clock::now();
                                       tree->Fill();
-                                      sinkBreakdown.diskTreeFill += std::chrono::steady_clock::now() - diskFillStart;
                                   }
 
-                                  const auto chunkFillStart = std::chrono::steady_clock::now();
-                                  chunkTree->Fill();
-                                  sinkBreakdown.chunkTreeFill += std::chrono::steady_clock::now() - chunkFillStart;
-                                  ++chunkEntries;
+                                  chunkBuffer->FillMove();
 
-                                  if (chunkTree->GetTotBytes() >= chunkTargetBytes) {
+                                  if (static_cast<Long64_t>(chunkBuffer->Size()) >= chunkTargetEvents) {
                                       queueCompletedChunk();
-                                      chunkFile = CreateEventTreeChunk(chunkIndex++, treeEvent);
-                                      chunkTree = dynamic_cast<TTree*>(chunkFile->Get("EventTree"));
+                                      chunkBuffer = CreateBuiltEventChunkBuffer(treeEvent);
                                   }
                               });
 
     queueCompletedChunk();
-    if (chunkFile != nullptr) {
-        delete chunkFile;
+    if (chunkBuffer != nullptr) {
+        delete chunkBuffer;
     }
-    memTreeQueue.set_finished();
+    chunkQueue.set_finished();
 
     // std::thread monitorThread(QueueMonitorThread,
     //                           std::ref(rawQueue),
@@ -739,12 +674,8 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
     //                           std::ref(doneFlag));
 
     histogramConsumer.join();
-
-    std::cout << "\n[Combined sink breakdown]\n"
-              << "  disk tree fill   : " << std::chrono::duration<double>(sinkBreakdown.diskTreeFill).count() << " s\n"
-              << "  chunk tree fill  : " << std::chrono::duration<double>(sinkBreakdown.chunkTreeFill).count() << " s\n"
-              << "  chunk finalize   : " << std::chrono::duration<double>(sinkBreakdown.chunkFinalize).count() << " s\n"
-              << "  chunk count      : " << sinkBreakdown.chunkCount << "\n";
+    doneFlag = true;
+    monitorThread.join();
 
     if (writeTree && tree != nullptr) {
         TFile* currentFile = tree->GetCurrentFile();
@@ -800,23 +731,21 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  int QueueSize,
                  int BufferSize,
                  Long64_t TS_TOLERANCE,
-                 Long64_t histTreeChunkBytes,
+                 Long64_t histChunkEvents,
                  EventTreeQueueHistMode histTreeMode)
 {
-    const bool effectiveWriteTree = writeTree || doHistSort;
-
-    if (!effectiveWriteTree && !doHistSort) {
+    if (!writeTree && !doHistSort) {
         return 0;
     }
 
-    if (effectiveWriteTree && !TestOutputPath(eventTreeOutfilename, overwrite, "TTree")) {
+    if (writeTree && !TestOutputPath(eventTreeOutfilename, overwrite, "TTree")) {
         return 3;
     }
     if (doHistSort && !TestOutputPath(histogramOutfilename, overwrite, "Histogram")) {
         return 4;
     }
 
-    if (effectiveWriteTree && !doHistSort) {
+    if (writeTree && !doHistSort) {
         DigitiserBase::SetTsTolerance(TS_TOLERANCE);
 
         TFile *outfile = new TFile(eventTreeOutfilename,"RECREATE");
@@ -844,7 +773,7 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                                              QueueSize,
                                              BufferSize,
                                              TS_TOLERANCE,
-                                             effectiveWriteTree ? eventTreeOutfilename : "",
-                                             histTreeChunkBytes,
+                                             writeTree ? eventTreeOutfilename : "",
+                                             histChunkEvents,
                                              histTreeMode);
 }

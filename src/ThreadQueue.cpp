@@ -121,4 +121,46 @@ void QueueMonitorThread(ThreadSafeQueue<std::vector<Event>>& queue,
     std::cout << std::endl;
 }
 
+void BuildMonitorThread(size_t builtEventBudget,
+             size_t bufferSize,
+             std::atomic<bool>& done_flag)
+{
+    using namespace std::chrono_literals;
 
+    const size_t bufferMax = bufferSize * 2;
+    const bool showBuiltQueue = builtEventBudget > 0;
+    const int eventWidth = std::to_string(showBuiltQueue ? builtEventBudget : 0).size();
+
+    while (!done_flag.load()) {
+        const size_t bsize = g_buffer_size.load();
+        const size_t idx   = g_idx.load();
+        const size_t pop   = g_popCount.load();
+        const size_t read  = g_ReadCount.load();
+        const size_t built = g_BuiltCount.load();
+        const size_t queuedBuilt = g_QueuedBuiltEvents.load();
+
+        const std::string bbar = make_buffer_bar(bsize, bufferMax, idx, pop);
+        const std::string ebar = make_queue_bar(queuedBuilt, builtEventBudget, 12);
+
+        const char* bcolor = (bsize > bufferMax * 0.8) ? CLR_YELLOW : CLR_CYAN;
+        const char* ecolor = (queuedBuilt > builtEventBudget * 0.8) ? CLR_RED : CLR_GREEN;
+
+        std::cout
+            << "\r\033[K"
+            << "B " << bcolor << "[" << bbar << "]" << CLR_RESET;
+
+        if (showBuiltQueue) {
+            std::cout
+                << " | E " << ecolor << "[" << ebar << "]" << CLR_RESET
+                << std::setw(eventWidth) << queuedBuilt;
+        }
+
+        std::cout
+            << " | " << read << ":" << built
+            << std::flush;
+
+        std::this_thread::sleep_for(400ms);
+    }
+
+    std::cout << std::endl;
+}

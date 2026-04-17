@@ -24,10 +24,10 @@ int main(int argc, char** argv)
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff);
     int ChunkSize = gIO->GetInput("Chunk", gBinChunkDefaultSize);
-    int QueueSize = gIO->GetInput("Queue", gThreadQueueChunks);
+    int QueueSize = gIO->GetInput("Queue", gThreadQueueBuiltEvents);
     int BufferSize = gIO->GetInput("Buffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
-    Long64_t HistTreeChunkMB = gIO->GetInput("HistTreeMB", 500);
+    Long64_t HistChunkEvents = gIO->GetInput("HistChunkEvents", 100000);
     int HistTreeModeInput = gIO->GetInput("HistTreeMode", 0);
     EventTreeQueueHistMode HistTreeMode =
         (HistTreeModeInput == 1)
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
         std::cout << "Chunk size overridden: " << ChunkSize << std::endl;
     }
     if (gIO->TestInput("Queue")) {
-        std::cout << "Queue size overridden: " << QueueSize << std::endl;
+        std::cout << "Built-event queue budget overridden: " << QueueSize << std::endl;
     }
     if (gIO->TestInput("Buffer")) {
         std::cout << "Build buffer overridden: " << BufferSize << std::endl;
@@ -49,8 +49,8 @@ int main(int argc, char** argv)
     if (gIO->TestInput("Tolerance")) {
         std::cout << "Timestamp tolerance overridden: " << TsTolerance << std::endl;
     }
-    if (gIO->TestInput("HistTreeMB")) {
-        std::cout << "Histogram tree chunk target overridden: " << HistTreeChunkMB << " MiB" << std::endl;
+    if (gIO->TestInput("HistChunkEvents")) {
+        std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;
     }
     if (gIO->TestInput("HistTreeMode")) {
         std::cout << "Histogram tree consumer mode overridden: " << HistTreeModeInput << std::endl;
@@ -59,10 +59,10 @@ int main(int argc, char** argv)
     cout<<endl<<gIO->TestInput("Buffer")<<endl;
     cout<<"Build window: "<<TS_Diff<<endl;
     cout<<"Chunk size: "<<ChunkSize<<endl;
-    cout<<"Queue size: "<<QueueSize<<endl;
+    cout<<"Built-event queue budget: "<<QueueSize<<endl;
     cout<<"Build buffer: "<<BufferSize<<endl;
     cout<<"Timestamp tolerance: "<<TsTolerance<<endl;
-    cout<<"Histogram tree chunk target: "<<HistTreeChunkMB<<" MiB"<<endl;
+    cout<<"Histogram chunk event target: "<<HistChunkEvents<<endl;
     cout<<"Histogram tree consumer mode: "<<HistTreeModeInput<<endl;
     int status = 0;
 
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
                               QueueSize,
                               BufferSize,
                               TsTolerance,
-                              HistTreeChunkMB * 1024LL * 1024LL,
+                              HistChunkEvents,
                               HistTreeMode);
     } else if (ReadTree) {
         timer.Start();

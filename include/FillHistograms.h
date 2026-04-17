@@ -5,7 +5,6 @@
 #include <ThreadQueue.h>
 #include <ThreadedHistograms.h>
 
-#include <TMemFile.h>
 #include <TString.h>
 #include <TTree.h>
 
@@ -24,13 +23,17 @@ void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
                                        ThreadedHistogramSet& histograms,
                                        unsigned int nthreads = 0);
 
-void FillHistogramsFromEventTreeQueue(ThreadSafeQueue<TMemFile*>& queue,
-                                      ThreadedHistogramSet& histograms,
-                                      unsigned int nthreads = 0);
+size_t FillHistogramsFromBuiltEventChunk(BuiltEventChunkBuffer& chunk,
+                                         ThreadedHistogramSet& histograms,
+                                         unsigned int nthreads = 0);
 
-void FillHistogramsFromEventTreeQueueUsingExistingFunction(ThreadSafeQueue<TMemFile*>& queue,
-                                                           ThreadedHistogramSet& histograms,
-                                                           unsigned int nthreads = 0);
+void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
+                                            ThreadedHistogramSet& histograms,
+                                            unsigned int nthreads = 0);
+
+void FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
+                                                                 ThreadedHistogramSet& histograms,
+                                                                 unsigned int nthreads = 0);
 
 bool WriteHistogramFile(ThreadedHistogramSet& histograms,
                         const TString& outfilename,
