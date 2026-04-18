@@ -2,41 +2,25 @@
 #define JAEASortFillHistograms
 
 #include <BuiltEvent.h>
-#include <ThreadQueue.h>
 #include <ThreadedHistograms.h>
+#include <Detectors.h>
 
-#include <TString.h>
-#include <TTree.h>
-
-enum class EventTreeQueueHistMode {
-    PersistentWorkers = 0,
-    PerChunkFillHistogramsFromEventTree = 1
+struct DetHitScratch {
+    std::vector<DetHit> hpge;
+    std::vector<DetHit> laBr;
+    std::vector<DetHit> siDeltaE;
+    std::vector<DetHit> si;
+    std::vector<DetHit> siDeltaE_B;
+    std::vector<DetHit> si_B;
+    std::vector<DetHit> solar;
+    std::vector<DetHit> dice;
+    std::vector<DetHit> cdte;
 };
 
-void FillHistograms(ThreadedHistogramSet& histograms, const BuiltEventView& event);
+void FillHistograms(HistogramRefs& H, const BuiltEventView& event);
 
-void FillHistogramsFromEventTree(TTree* tree,
-                                 ThreadedHistogramSet& histograms,
-                                 unsigned int nthreads = 0);
+DetHitScratch& DetHitScratchBuffer();
 
-void FillHistogramsFromBuiltEventQueue(ThreadSafeQueue<BuiltEvent>& queue,
-                                       ThreadedHistogramSet& histograms,
-                                       unsigned int nthreads = 0);
-
-size_t FillHistogramsFromBuiltEventChunk(BuiltEventChunkBuffer& chunk,
-                                         ThreadedHistogramSet& histograms,
-                                         unsigned int nthreads = 0);
-
-void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
-                                            ThreadedHistogramSet& histograms,
-                                            unsigned int nthreads = 0);
-
-void FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
-                                                                 ThreadedHistogramSet& histograms,
-                                                                 unsigned int nthreads = 0);
-
-bool WriteHistogramFile(ThreadedHistogramSet& histograms,
-                        const TString& outfilename,
-                        bool overwrite = false);
+DetHitScratch& BuildDetHitCategories(const BuiltEventView& event);
 
 #endif

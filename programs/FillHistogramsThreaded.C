@@ -1,4 +1,4 @@
-#include <FillHistograms.h>
+#include <ThreadedHistFill.h>
 
 #include <TFile.h>
 #include <TStopwatch.h>
