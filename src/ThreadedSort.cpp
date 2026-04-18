@@ -195,6 +195,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
         Long64_t lastTs = -1;
         size_t idx = 0;
         size_t sinceMerge = 0;
+        size_t FILL_EXCESS = 0;
         size_t builtCount = 0;
 
         auto MergeNextRefill = [&]() {
@@ -206,7 +207,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 });
 
                 if (refills.readyOrder.empty()) {
-                    return false;
+                    return static_cast<size_t>(0);
                 }
 
                 slotIndex = refills.readyOrder.front();
@@ -214,6 +215,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             }
 
             auto& refillBuffer = refills.slots[slotIndex].events;
+            const size_t added = refillBuffer.size();
             const size_t oldSize = buildBuffer.size() - idx;
             buildBuffer.insert(buildBuffer.end(),
                                std::make_move_iterator(refillBuffer.begin()),
@@ -235,7 +237,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             }
             SetRefillState(slotIndex, static_cast<int>(RefillSlot::State::Free));
             refills.cv.notify_all();
-            return true;
+            return added;
         };
 
         // The consumer owns the active ordered buffer and the current
@@ -252,7 +254,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 lastTs = currentTs;
                 eventBuffer.StartEvent(current);
             } else if (currentTs < lastTs) {
-                std::cout << "[TIME RESET]\n";
+                std::cout << "\n[TIME RESET]\n";
                 firstTs = currentTs;
                 lastTs = currentTs;
                 eventBuffer.StartEvent(current);
@@ -268,8 +270,11 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 eventBuffer.StartEvent(current);
             }
 
-            if (sinceMerge >= REFILL_TARGET) {
-                MergeNextRefill();
+            if (sinceMerge >= REFILL_TARGET+FILL_EXCESS) {
+                const size_t merged = MergeNextRefill();
+                if (merged > REFILL_TARGET) {
+                    FILL_EXCESS = merged - REFILL_TARGET;
+                }
                 sinceMerge = 0;
 
                 // Compact only occasionally so the consumer keeps working on

@@ -52,8 +52,11 @@ JAEASortIO input syntax
       Coincidence build window in ns for grouping hits into one built event.
     -BinChunk N
       Raw digitiser read chunk size used before local sorting.
+      BinChunk <<< BuildBuffer    Recommended 1-100
     -BuildBuffer N
       Active event buffer size used by the built-event builder.
+      Too small may give Time Errors due to digitiser disorder
+      Default 1,000,000
     -Tolerance ns
       Timestamp ordering tolerance forwarded to the digitiser readers.
     -HistChunks N
