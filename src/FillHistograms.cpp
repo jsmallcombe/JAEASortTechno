@@ -72,9 +72,9 @@ DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
 
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 {
-    // DetHitScratch& detHits = BuildDetHitCategories(event);
-    // auto& hpge = detHits.hpge;
-    // auto& si = detHits.si;
+    DetHitScratch& detHits = BuildDetHitCategories(event);
+    auto& hpge = detHits.hpge;
+    auto& si = detHits.si;
 
     for (size_t i = 0; i < event.Size(); ++i) {
         H.mod_ch_adc_ts->Fill(event.Mod[i], event.Ch[i], event.Adc[i]);

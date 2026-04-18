@@ -40,8 +40,21 @@ JAEASortIO input syntax
       If not provided, modules are indexed in order of .bin file discovery.
   numeric options:
     -OptionName value
-      stores value under OptionName for later access via TestInput/GetInput.
+      stores value under OptionName for later access via IO::TestInput()/IO::GetInput().
   particle-ID gates:
     -ID gatefile.root gate_id
       loads the first TCutG found in gatefile.root and associates it with gate_id.
 
+  Additional runtime tuning options used by JAEASortTechnoAP:
+    -Workers N
+      Number of histogram worker threads for tree->hist and chunk->hist stages.
+    -Window ns
+      Coincidence build window in ns for grouping hits into one built event.
+    -BinChunk N
+      Raw digitiser read chunk size used before local sorting.
+    -BuildBuffer N
+      Active event buffer size used by the built-event builder.
+    -Tolerance ns
+      Timestamp ordering tolerance forwarded to the digitiser readers.
+    -HistChunks N
+      Built-event count per histogram chunk in the direct bin->hist path.

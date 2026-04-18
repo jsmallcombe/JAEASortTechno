@@ -33,7 +33,6 @@ void MakeEventTreeFromBin(TString infilename,
                         TString outfilename="",
                         Long64_t tdiff=gTS_Diff,
                         int CHUNK = gBinChunkDefaultSize,
-                        int QueueSize = gThreadQueueBuiltEvents,
                         int BufferSize=gBuildBuffDefaultSize,
                         Long64_t TS_TOLERANCE = gTS_TOLERANCE);
 
@@ -46,7 +45,6 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       Long64_t tdiff = gTS_Diff,
                                       unsigned int histWorkers = 0,
                                       int CHUNK = gBinChunkDefaultSize,
-                                      int QueueSize = gThreadQueueBuiltEvents,
                                       int BufferSize = gBuildBuffDefaultSize,
                                       Long64_t TS_TOLERANCE = gTS_TOLERANCE,
                                       TString treeOutfilename = "",
@@ -72,7 +70,6 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  bool doHistSort = false,
                  unsigned int histWorkers = 0,
                  int CHUNK = gBinChunkDefaultSize,
-                 int QueueSize = gThreadQueueBuiltEvents,
                  int BufferSize = gBuildBuffDefaultSize,
                  Long64_t TS_TOLERANCE = gTS_TOLERANCE,
                  Long64_t histChunkEvents = gHistChunkDefaultEvents);

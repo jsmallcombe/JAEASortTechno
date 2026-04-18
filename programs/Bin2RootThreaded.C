@@ -22,7 +22,7 @@ int main(int argc, char** argv)
         timer.Start();
 
         //         MakeEventTreeFromBin(infilename, outfilename, chainmode, tdiff, BufferSize);
-        MakeEventTreeFromBin(infilename, outfilename, tdiff, gBinChunkDefaultSize, gThreadQueueBuiltEvents, BufferSize);
+        MakeEventTreeFromBin(infilename, outfilename, tdiff, gBinChunkDefaultSize, BufferSize);
 
         timer.Stop();
         Double_t rtime = timer.RealTime();

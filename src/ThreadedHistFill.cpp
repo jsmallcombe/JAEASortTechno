@@ -250,7 +250,7 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
 
                 // Once a chunk is claimed by a worker it is no longer queued
                 // backlog, so remove it from the monitor counter immediately.
-                g_QueuedBuiltEvents.fetch_sub(chunk->Size(), std::memory_order_relaxed);
+                // g_QueuedBuiltEvents.fetch_sub(1, std::memory_order_relaxed);
                 FillHistogramsFromBuiltEventChunkSequential(*chunk, refs);
                 delete chunk;
                 chunk = nullptr;

@@ -61,12 +61,12 @@ class JAEASortIO{
     bool Overwrite = false;
     bool Validated;
 
-	string ReturnFind(string compare) const;
-	bool IsPresent(string compare) const;
-	double Next(string compare) const;
-	string NextString(string compare) const;
-	void Next(string compare,double &ret) const {ret=Next(compare);}
-	void NextTwo(string compare,double& ret,double& retB) const;
+	// string ReturnFind(string compare) const;
+	// bool IsPresent(string compare) const;
+	// double Next(string compare) const;
+	// string NextString(string compare) const;
+	// void Next(string compare,double &ret) const {ret=Next(compare);}
+	// void NextTwo(string compare,double& ret,double& retB) const;
     
     bool TestInput(TString InputName) const;
     double GetInput(TString InputName,double=0) const;

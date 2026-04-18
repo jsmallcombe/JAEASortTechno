@@ -23,22 +23,18 @@ int main(int argc, char** argv)
     cout<<endl<<"Input summary:"<<endl;
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff);
-    int ChunkSize = gIO->GetInput("Chunk", gBinChunkDefaultSize);
-    int QueueSize = gIO->GetInput("Queue", gThreadQueueBuiltEvents);
-    int BufferSize = gIO->GetInput("Buffer", gBuildBuffDefaultSize);
+    int ChunkSize = gIO->GetInput("BinChunk", gBinChunkDefaultSize);
+    int BufferSize = gIO->GetInput("BuildBuffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
-    Long64_t HistChunkEvents = gIO->GetInput("HistChunkEvents", gHistChunkDefaultEvents);
+    Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
 
     if (gIO->TestInput("Window")) {
-        std::cout << "Build window default overidden: " << TS_Diff << std::endl;
+        std::cout << "Build window default overidden: " << TS_Diff <<" ns" << std::endl;
     }
-    if (gIO->TestInput("Chunk")) {
+    if (gIO->TestInput("BinChunk")) {
         std::cout << "Chunk size overridden: " << ChunkSize << std::endl;
     }
-    if (gIO->TestInput("Queue")) {
-        std::cout << "Built-event queue budget overridden: " << QueueSize << std::endl;
-    }
-    if (gIO->TestInput("Buffer")) {
+    if (gIO->TestInput("BuildBuffer")) {
         std::cout << "Build buffer overridden: " << BufferSize << std::endl;
     }
     if (gIO->TestInput("Tolerance")) {
@@ -51,7 +47,6 @@ int main(int argc, char** argv)
     cout<<endl;
     cout<<"Build window: "<<TS_Diff<<endl;
     cout<<"Chunk size: "<<ChunkSize<<endl;
-    cout<<"Built-event queue budget: "<<QueueSize<<endl;
     cout<<"Build buffer: "<<BufferSize<<endl;
     cout<<"Timestamp tolerance: "<<TsTolerance<<endl;
     cout<<"Histogram chunk event target: "<<HistChunkEvents<<endl;
@@ -72,7 +67,6 @@ int main(int argc, char** argv)
                               DoHistSort,
                               HistWorkers,
                               ChunkSize,
-                              QueueSize,
                               BufferSize,
                               TsTolerance,
                               HistChunkEvents);

@@ -561,6 +561,8 @@ bool TestOutputPath(const TString& filename, bool overwrite, const char* label)
 }
  
 void JAEASortIO::ProcessOption(TString str){
+        str.ToLower();
+
         // A special argument, read the next item out of order of normal processing loop
 
 // Contains 
@@ -575,7 +577,7 @@ void JAEASortIO::ProcessOption(TString str){
             *this>>str;
             TreeOutputPath = str;
             WriteEventTree = true;
-        }else if(str.EqualTo("-H")||str.EqualTo("-h")){
+        }else if(str.EqualTo("-h")){
             DoHistSort=true;
         }else if(str.EqualTo("-hist")){
             *this>>str;
@@ -583,15 +585,15 @@ void JAEASortIO::ProcessOption(TString str){
             if(IsRootPath(str.Data())){ // If a root file name
                 HistogramOutFilename=str;
             }
-        }else if(str.EqualTo("-O") || str.EqualTo("-o")){
+        }else if(str.EqualTo("-o")){
             Overwrite = true;
-        }else if(str.EqualTo("-APV8104")){
+        }else if(str.EqualTo("-apv8104")){
             *this>>APV8104::ModuleZeroIndex;
-        }else if(str.EqualTo("-APV8032")){
+        }else if(str.EqualTo("-apv8032")){
             *this>>APV8032::ModuleZeroIndex;
-        }else if(str.EqualTo("-APV8016A")){
+        }else if(str.EqualTo("-apv8016a")){
             *this>>APV8016A::ModuleZeroIndex;
-        }else if(str.EqualTo("-ID")){// Load a particle ID gate, next argument file containing name
+        }else if(str.EqualTo("-id")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name
                 
@@ -650,49 +652,48 @@ void JAEASortIO::Rewind(){
 	
 }
 
-string JAEASortIO::ReturnFind(string compare) const{
-	for(int i=0;i<store.size();i++){string str=store[i];
-		if(str.find(compare)<str.size())return str;
-	}	
-	return "";
-}
+// string JAEASortIO::ReturnFind(string compare) const{
+// 	for(int i=0;i<store.size();i++){string str=store[i];
+// 		if(str.find(compare)<str.size())return str;
+// 	}	
+// 	return "";
+// }
 
-bool JAEASortIO::IsPresent(string compare) const{
-	return ReturnFind(compare).size();
-}
+// bool JAEASortIO::IsPresent(string compare) const{
+// 	return ReturnFind(compare).size();
+// }
 
-double JAEASortIO::Next(string compare) const{
-	for(int i=0;i<store.size()-1;i++){string str=store[i];
-		if(str.find(compare)<str.size()){
-			stringstream ss;ss<<store[i+1];
-			double ret;ss>>ret;
-			return ret;
-		}
-	}
-	return 0;
-}
+// double JAEASortIO::Next(string compare) const{
+// 	for(int i=0;i<store.size()-1;i++){string str=store[i];
+// 		if(str.find(compare)<str.size()){
+// 			stringstream ss;ss<<store[i+1];
+// 			double ret;ss>>ret;
+// 			return ret;
+// 		}
+// 	}
+// 	return 0;
+// }
 
-string JAEASortIO::NextString(string compare) const{
-	for(int i=0;i<store.size()-1;i++){string str=store[i];
-		if(str.find(compare)<str.size()){
-			return store[i+1];
-		}
-	}
-	return "";
-}
+// string JAEASortIO::NextString(string compare) const{
+// 	for(int i=0;i<store.size()-1;i++){string str=store[i];
+// 		if(str.find(compare)<str.size()){
+// 			return store[i+1];
+// 		}
+// 	}
+// 	return "";
+// }
 
-
-void JAEASortIO::NextTwo(string compare,double& ret,double& retB) const{
-	for(int i=0;i<store.size()-2;i++){
-		string str=store[i];
-		if(str.find(compare)<str.size()){
-			stringstream ss;
-			ss<<store[i+1]<<" "<<store[i+2];
-			ss>>ret>>retB;
-			return;
-		}
-	}
-}
+// void JAEASortIO::NextTwo(string compare,double& ret,double& retB) const{
+// 	for(int i=0;i<store.size()-2;i++){
+// 		string str=store[i];
+// 		if(str.find(compare)<str.size()){
+// 			stringstream ss;
+// 			ss<<store[i+1]<<" "<<store[i+2];
+// 			ss>>ret>>retB;
+// 			return;
+// 		}
+// 	}
+// }
 
 TChain* JAEASortIO::DataTree(TString TreeName){
     Entries.clear();
@@ -718,14 +719,15 @@ TChain* JAEASortIO::DataTree(TString TreeName){
     }
 }
 
-
 bool JAEASortIO::TestInput(TString InputName) const{
+    InputName.ToLower();
     for(auto& s : NumericInputNames){
         if(s==InputName)return true;
     }
     return false;
 }
 double JAEASortIO::GetInput(TString InputName,double dflt) const{
+    InputName.ToLower();
     for(unsigned int i=0;i<NumericInputNames.size();i++){
         if(NumericInputNames[i]==InputName)return NumericInputs[i];
     }
