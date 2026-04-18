@@ -27,12 +27,7 @@ int main(int argc, char** argv)
     int QueueSize = gIO->GetInput("Queue", gThreadQueueBuiltEvents);
     int BufferSize = gIO->GetInput("Buffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
-    Long64_t HistChunkEvents = gIO->GetInput("HistChunkEvents", 100000);
-    int HistTreeModeInput = gIO->GetInput("HistTreeMode", 0);
-    EventTreeQueueHistMode HistTreeMode =
-        (HistTreeModeInput == 1)
-            ? EventTreeQueueHistMode::PerChunkFillHistogramsFromEventTree
-            : EventTreeQueueHistMode::PersistentWorkers;
+    Long64_t HistChunkEvents = gIO->GetInput("HistChunkEvents", gHistChunkDefaultEvents);
 
     if (gIO->TestInput("Window")) {
         std::cout << "Build window default overidden: " << TS_Diff << std::endl;
@@ -52,18 +47,14 @@ int main(int argc, char** argv)
     if (gIO->TestInput("HistChunkEvents")) {
         std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;
     }
-    if (gIO->TestInput("HistTreeMode")) {
-        std::cout << "Histogram tree consumer mode overridden: " << HistTreeModeInput << std::endl;
-    }
 
-    cout<<endl<<gIO->TestInput("Buffer")<<endl;
+    cout<<endl;
     cout<<"Build window: "<<TS_Diff<<endl;
     cout<<"Chunk size: "<<ChunkSize<<endl;
     cout<<"Built-event queue budget: "<<QueueSize<<endl;
     cout<<"Build buffer: "<<BufferSize<<endl;
     cout<<"Timestamp tolerance: "<<TsTolerance<<endl;
     cout<<"Histogram chunk event target: "<<HistChunkEvents<<endl;
-    cout<<"Histogram tree consumer mode: "<<HistTreeModeInput<<endl;
     int status = 0;
 
     TStopwatch timer;
@@ -84,8 +75,7 @@ int main(int argc, char** argv)
                               QueueSize,
                               BufferSize,
                               TsTolerance,
-                              HistChunkEvents,
-                              HistTreeMode);
+                              HistChunkEvents);
     } else if (ReadTree) {
         timer.Start();
         ranSort = true;

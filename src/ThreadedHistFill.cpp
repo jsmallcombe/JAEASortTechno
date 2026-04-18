@@ -15,6 +15,8 @@
 
 namespace {
 
+// Sequential inner loop for one completed chunk. Each worker resolves its
+// own histogram references once, then reuses them while walking the chunk.
 size_t FillHistogramsFromBuiltEventChunkSequential(BuiltEventChunkBuffer& chunk, HistogramRefs& refs)
 {
     size_t processed = 0;
@@ -35,6 +37,8 @@ struct EventTreeProgressState {
     std::vector<TString> inputFiles;
 };
 
+// Translate a global entry count into the source file index using the
+// cumulative event totals cached by JAEASortIO when the input chain was built.
 size_t FindCurrentFileIndex(const EventTreeProgressState& state, Long64_t processed)
 {
     if (state.cumulativeEntries.empty()) {
@@ -50,6 +54,9 @@ size_t FindCurrentFileIndex(const EventTreeProgressState& state, Long64_t proces
     return static_cast<size_t>(std::distance(state.cumulativeEntries.begin(), it));
 }
 
+// Lightweight progress display for the EventTree -> histogram path.
+// This is separate from the raw-bin monitor because the tree reader path
+// has no event-build buffer or built-event chunk queue to display.
 void EventTreeMonitorThread(const EventTreeProgressState& state)
 {
     using namespace std::chrono_literals;
@@ -97,6 +104,8 @@ void EventTreeMonitorThread(const EventTreeProgressState& state)
     std::cout << std::endl;
 }
 
+// Workers keep a local counter and only publish progress periodically to
+// avoid paying for an atomic increment on every processed built event.
 void FlushProcessedEntries(std::atomic<Long64_t>& processed, Long64_t& localCount)
 {
     if (localCount > 0) {
@@ -105,6 +114,8 @@ void FlushProcessedEntries(std::atomic<Long64_t>& processed, Long64_t& localCoun
     }
 }
 
+// The tree progress monitor only makes sense when we know both the total
+// entry count and the per-file cumulative entry boundaries from gIO.
 bool ShouldShowEventTreeMonitor(TTree* tree, Long64_t totalEntries)
 {
     if (!tree || totalEntries <= 0) {
@@ -143,6 +154,8 @@ void FillHistogramsFromEventTree(TTree* tree,
         monitorThread.reset(new std::thread(EventTreeMonitorThread, std::cref(progress)));
     }
 
+    // Single-thread fallback keeps the same logic as the MT path but avoids
+    // the TTreeProcessorMT setup overhead for explicitly serial runs.
     if (nthreads <= 1) {
         std::vector<UShort_t>* ts = 0;
         std::vector<UShort_t>* mod = 0;
@@ -174,6 +187,8 @@ void FillHistogramsFromEventTree(TTree* tree,
         return;
     }
 
+    // Multi-threaded tree reading is handled by ROOT, while each worker
+    // resolves its own thread-local histogram references.
     ROOT::EnableImplicitMT(nthreads);
     ROOT::TTreeProcessorMT processor(*tree, nthreads);
 
@@ -202,20 +217,6 @@ void FillHistogramsFromEventTree(TTree* tree,
     }
 }
 
-size_t FillHistogramsFromBuiltEventChunk(BuiltEventChunkBuffer& chunk,
-                                         ThreadedHistogramSet& histograms,
-                                         unsigned int nthreads)
-{
-    if (chunk.Empty()) {
-        return 0;
-    }
-
-    (void)nthreads;
-    ROOT::EnableThreadSafety();
-    HistogramRefs refs = histograms.ResolveHistogramRefs();
-    return FillHistogramsFromBuiltEventChunkSequential(chunk, refs);
-}
-
 void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
                                             ThreadedHistogramSet& histograms,
                                             unsigned int nthreads)
@@ -223,6 +224,8 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
     ROOT::EnableThreadSafety();
     histograms.ResolveHistogramRefs();
 
+    // Default to one worker per hardware thread when the caller leaves the
+    // worker count unset, but always keep at least one consumer alive.
     unsigned int workerCount = nthreads;
     if (workerCount == 0) {
         workerCount = std::thread::hardware_concurrency();
@@ -245,6 +248,8 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
                     break;
                 }
 
+                // Once a chunk is claimed by a worker it is no longer queued
+                // backlog, so remove it from the monitor counter immediately.
                 g_QueuedBuiltEvents.fetch_sub(chunk->Size(), std::memory_order_relaxed);
                 FillHistogramsFromBuiltEventChunkSequential(*chunk, refs);
                 delete chunk;
@@ -255,20 +260,6 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
 
     for (std::thread& worker : workers) {
         worker.join();
-    }
-}
-
-void FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
-                                                                 ThreadedHistogramSet& histograms,
-                                                                 unsigned int nthreads)
-{
-    ROOT::EnableThreadSafety();
-    BuiltEventChunkBuffer* chunk = nullptr;
-    while (queue.pop(chunk)) {
-        g_QueuedBuiltEvents.fetch_sub(chunk->Size(), std::memory_order_relaxed);
-        FillHistogramsFromBuiltEventChunk(*chunk, histograms, nthreads);
-        delete chunk;
-        chunk = nullptr;
     }
 }
 

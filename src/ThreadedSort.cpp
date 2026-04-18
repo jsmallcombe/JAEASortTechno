@@ -41,6 +41,9 @@ struct EventTreeBuffers {
     }
 };
 
+// Bind the live event-building vectors directly to a TTree. The vector
+// objects stay at stable addresses for ROOT while their contents are
+// cleared and refilled for each coincidence event.
 void BindBuiltEventTreeBranches(TTree* tree, EventTreeBuffers& event)
 {
     tree->Branch("Ts",  &event.Ts);
@@ -49,6 +52,9 @@ void BindBuiltEventTreeBranches(TTree* tree, EventTreeBuffers& event)
     tree->Branch("Adc", &event.Adc);
 }
 
+// Create one chunk buffer that mirrors the same branch-style interface as
+// the output tree, so the builder can write tree and histogram handoff data
+// through the same event vectors with minimal extra logic.
 BuiltEventChunkBuffer* CreateBuiltEventChunkBuffer(EventTreeBuffers& event)
 {
     BuiltEventChunkBuffer* chunk = new BuiltEventChunkBuffer();
@@ -80,9 +86,9 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
     Long64_t globalMaxTs = -1;
     bool inputFinished = false;
 
-    // =========================
-    // FillBuffer replacement
-    // =========================
+    // Refill the sort buffer from the raw digitisers while preserving the
+    // existing globalMaxTs acceptance rule that keeps chunked bin reads
+    // close to time-order before the buffered merge step.
     auto FillBuffer = [&](size_t nFill) {
         size_t added = 0;
         while (added < nFill && !inputFinished) {
@@ -153,52 +159,38 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
     size_t idx = 0;
     size_t popCount = 0;
 
-    // =========================
-    // Main loop
-    // =========================
+    // The main builder loop walks the partially sorted buffer, groups hits
+    // into coincidence events, and hands each completed event to the caller.
     while (idx < buffer.size()) {
         Event& ev = buffer[idx++];
         ++popCount;
 
         Long64_t tTs_local = ev.ts;
 
-        // --- event building ---
         if (eventBuffer.Empty()) {
-            // Only actually called for very first event
             firstTs = tTs_local;
             lastTs = tTs_local;
             eventBuffer.StartEvent(ev);
         } else {
-            // Sort failure state, should never happen
             if (tTs_local < lastTs) {
                 std::cout << "[TIME RESET]\n";
                 firstTs = tTs_local;
                 lastTs = tTs_local;
                 eventBuffer.StartEvent(ev);
             } else if (tTs_local - lastTs < COINC_WINDOW) {
-                // Is part of current event, add
                 eventBuffer.AppendHit(ev, firstTs);
                 lastTs = tTs_local;
             } else {
-                // EVENT COMPLETE
                 writeEvent(eventBuffer);
                 ++builtCount;
 
-                // Start next event
                 firstTs = tTs_local;
                 lastTs = tTs_local;
                 eventBuffer.StartEvent(ev);
             }
         }
 
-        // =========================
-        // Refill condition
-        // =========================
         if (popCount >= REFILL_THRESHOLD) {
-            ///// remove consumed elements on every read
-            // buffer.erase(buffer.begin(), buffer.begin() + idx);
-            // idx = 0;
-
             size_t old_size = buffer.size() - idx;
             size_t added = FillBuffer(BUFFER_TARGET - old_size);
             readCount += added;
@@ -207,14 +199,12 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 size_t new_size = buffer.size() - idx;
                 auto base = buffer.begin() + idx;
 
-                // Sort ONLY new elements
                 std::sort(base + old_size,
                           base + new_size,
                           [](const Event& a, const Event& b) {
                               return a.ts < b.ts;
                           });
 
-                // Merge only as far as current index
                 std::inplace_merge(base,
                                    base + old_size,
                                    base + new_size);
@@ -222,9 +212,8 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
             popCount = 0;
 
-            // =========================
-            // Occasional compaction. Not notably faster than shrinking every fill
-            // =========================
+            // Compact only occasionally so we do not pay an erase/shift cost
+            // on every refill.
             if (buffer.size() > 2 * BUFFER) {
                 buffer.erase(buffer.begin(), buffer.begin() + idx);
                 idx = 0;
@@ -248,9 +237,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
 } // namespace
 
-int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int QueueSize, int BufferSize ) {
-    (void)QueueSize;
-
+int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int BufferSize ) {
     const size_t CHUNK_SIZE = CHUNK;
     const size_t BUFFER_TARGET = BufferSize;
     const size_t TDIFF = tdiff;
@@ -265,6 +252,8 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TT
     g_BuiltCount = 0;
     g_QueuedBuiltEvents = 0;
 
+    // Tree-only mode has no built-event queue, so the monitor shows only the
+    // raw event buffer state while the builder runs on the main thread.
     std::thread monitorThread(BuildMonitorThread, 0, BUFFER_TARGET, std::ref(doneFlag));
 
     BuildEventsFromDigitisers(digitisers,
@@ -302,7 +291,7 @@ void MakeEventTreeFromBin(TString infilename,
     outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
     outtree->SetAutoSave(0);
 
-    ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, QueueSize, BufferSize);
+    ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, BufferSize);
 
     TFile* currentFile = outtree->GetCurrentFile();
     if (currentFile) {
@@ -320,8 +309,7 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       int BufferSize,
                                       Long64_t TS_TOLERANCE,
                                       TString treeOutfilename,
-                                      Long64_t histChunkEvents,
-                                      EventTreeQueueHistMode histTreeMode)
+                                      Long64_t histChunkEvents)
 {
     DigitiserBase::SetTsTolerance(TS_TOLERANCE);
     ROOT::EnableThreadSafety();
@@ -355,27 +343,25 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
         tree->SetAutoSave(0);
     }
 
+    // The histogram handoff queue carries whole built-event chunks rather
+    // than individual events so the producer pays one push per chunk and the
+    // worker pool gets coarse-grained work items.
     ThreadSafeQueue<BuiltEventChunkBuffer*> chunkQueue(chunkQueueCapacity);
     ThreadedHistogramSet histograms;
     std::thread monitorThread(BuildMonitorThread, builtEventBudget, bufferTarget, std::ref(doneFlag));
 
-    std::thread histogramConsumer;
-    if (histTreeMode == EventTreeQueueHistMode::PerChunkFillHistogramsFromEventTree) {
-        histogramConsumer = std::thread([&chunkQueue, &histograms, histWorkers]() {
-            FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(chunkQueue, histograms, histWorkers);
-        });
-    } else {
-        histogramConsumer = std::thread([&chunkQueue, &histograms, histWorkers]() {
-            FillHistogramsFromBuiltEventChunkQueue(chunkQueue, histograms, histWorkers);
-        });
-    }
+    std::thread histogramConsumer([&chunkQueue, &histograms, histWorkers]() {
+        FillHistogramsFromBuiltEventChunkQueue(chunkQueue, histograms, histWorkers);
+    });
 
     EventTreeBuffers treeEvent;
     if (writeTree && tree != nullptr) {
         BindBuiltEventTreeBranches(tree, treeEvent);
     }
 
-    const Long64_t chunkTargetEvents = histChunkEvents > 0 ? histChunkEvents : 100000;
+    // Chunk rollover is now based on an exact built-event count rather than
+    // an estimated byte size, which keeps the queue budget predictable.
+    const Long64_t chunkTargetEvents = histChunkEvents > 0 ? histChunkEvents : gHistChunkDefaultEvents;
     BuiltEventChunkBuffer* chunkBuffer = CreateBuiltEventChunkBuffer(treeEvent);
     auto queueCompletedChunk = [&]() {
         if (!chunkBuffer || chunkBuffer->Empty()) {
@@ -396,6 +382,9 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       tree->Fill();
                                   }
 
+                                  // Move the just-written event vectors into
+                                  // the current histogram chunk without rebinding
+                                  // the tree branches away from treeEvent.
                                   chunkBuffer->FillMove();
 
                                   if (static_cast<Long64_t>(chunkBuffer->Size()) >= chunkTargetEvents) {
@@ -409,12 +398,6 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
         delete chunkBuffer;
     }
     chunkQueue.set_finished();
-
-    // std::thread monitorThread(QueueMonitorThread,
-    //                           std::ref(rawQueue),
-    //                           maxQueue,
-    //                           bufferTarget,
-    //                           std::ref(doneFlag));
 
     histogramConsumer.join();
     doneFlag = true;
@@ -474,8 +457,7 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  int QueueSize,
                  int BufferSize,
                  Long64_t TS_TOLERANCE,
-                 Long64_t histChunkEvents,
-                 EventTreeQueueHistMode histTreeMode)
+                 Long64_t histChunkEvents)
 {
     if (!writeTree && !doHistSort) {
         return 0;
@@ -498,7 +480,7 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
         outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
         outtree->SetAutoSave(0);
 
-        ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, QueueSize, BufferSize);
+        ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, BufferSize);
 
         TFile* currentFile = outtree->GetCurrentFile();
         if (currentFile) {
@@ -517,6 +499,5 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                                              BufferSize,
                                              TS_TOLERANCE,
                                              writeTree ? eventTreeOutfilename : "",
-                                             histChunkEvents,
-                                             histTreeMode);
+                                             histChunkEvents);
 }

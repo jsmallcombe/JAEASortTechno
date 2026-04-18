@@ -7,27 +7,23 @@
 #include <TString.h>
 #include <TTree.h>
 
-enum class EventTreeQueueHistMode {
-    PersistentWorkers = 0,
-    PerChunkFillHistogramsFromEventTree = 1
-};
-
+// Histogram sort for an existing built-event tree or chain.
+// Uses ROOT's tree readers, optionally with TTreeProcessorMT,
+// and updates a single shared ThreadedHistogramSet.
 void FillHistogramsFromEventTree(TTree* tree,
                                  ThreadedHistogramSet& histograms,
                                  unsigned int nthreads = 0);
 
-size_t FillHistogramsFromBuiltEventChunk(BuiltEventChunkBuffer& chunk,
-                                         ThreadedHistogramSet& histograms,
-                                         unsigned int nthreads = 0);
-
+// Consume completed built-event chunks from the bounded queue and
+// process them with a persistent pool of histogram workers until
+// the producer marks the queue finished.
 void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
                                             ThreadedHistogramSet& histograms,
                                             unsigned int nthreads = 0);
 
-void FillHistogramsFromBuiltEventChunkQueueUsingExistingFunction(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
-                                                                 ThreadedHistogramSet& histograms,
-                                                                 unsigned int nthreads = 0);
-
+// Write the merged histogram set to the requested ROOT file.
+// This is shared by both the direct raw-bin path and the
+// existing event-tree histogram path.
 bool WriteHistogramFile(ThreadedHistogramSet& histograms,
                         const TString& outfilename,
                         bool overwrite = false);

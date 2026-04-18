@@ -19,16 +19,12 @@ JAEASortIO input syntax
       Build histograms with automated filename
     -hist path/hist.root
       Build histograms with manual path/filename
+    NOTE: While options -tree and -h *can* be used together, due to reasons of root-file efficiency, it is about 30-50% faster to run the program sequentially. 
   overwrite:
     -O / -o
-      Enables overwrite mode. For event tree and histogram outputs.
+      Enables overwrite mode for event tree and histogram outputs.
 
-  particle-ID gates:
-    -ID gatefile.root gate_id
-      loads the first TCutG found in gatefile.root and associates it with gate_id.
-  numeric options:
-    -OptionName value
-      stores value under OptionName for later access via TestInput/GetInput.
+
   calibration file:
     file.cal
   options file:
@@ -42,5 +38,10 @@ JAEASortIO input syntax
     -APV8016A zeroindex
       zeroindex is the module number corresponding to fmodl=1.
       If not provided, modules are indexed in order of .bin file discovery.
-  
+  numeric options:
+    -OptionName value
+      stores value under OptionName for later access via TestInput/GetInput.
+  particle-ID gates:
+    -ID gatefile.root gate_id
+      loads the first TCutG found in gatefile.root and associates it with gate_id.
 
