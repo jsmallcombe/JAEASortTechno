@@ -75,7 +75,8 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                                size_t BUFFER,
                                size_t CHUNK_SIZE,
                                EventTreeBuffers& eventBuffer,
-                               EventWriter&& writeEvent)
+                               EventWriter&& writeEvent,
+                               DigitiserAdcHistograms* ADChists=nullptr)
 {
     const Long64_t COINC_WINDOW = tdiff;
     const size_t BUFFER_TARGET = BUFFER;
@@ -131,6 +132,9 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                     int count = 0;
 
                     while (digi.getNextEvent(ev)) {
+                        if(ADChists){
+                            ADChists->Fill(ev.mod, ev.ch, ev.adc);
+                        }
                         target.push_back(ev);
                         ++count;
                         if (count >= static_cast<int>(CHUNK_SIZE)) {
@@ -363,7 +367,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
 } // namespace
 
-int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int BufferSize ) {
+int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TTree* outtree,Long64_t tdiff, int CHUNK, int BufferSize,DigitiserAdcHistograms* ADChists) {
     const size_t CHUNK_SIZE = CHUNK;
     const size_t BUFFER_TARGET = BufferSize;
     const size_t REFILL_TARGET = std::max<size_t>(1, BUFFER_TARGET / gBuildRefillDivisor);
@@ -391,7 +395,8 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,TT
                               treeEvent,
                               [&](EventTreeBuffers&) {
                                   outtree->Fill();
-                              });
+                              },
+                              ADChists);
 
     doneFlag = true;
     monitorThread.join();
@@ -602,14 +607,14 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
         DigitiserBase::SetTsTolerance(TS_TOLERANCE);
 
         TFile *outfile = new TFile(eventTreeOutfilename,"RECREATE");
+        DigitiserAdcHistograms ADChists=BuildDigitiserAdcHistograms(digitisers);
         TTree *outtree = new TTree("EventTree","EventTree");
         outtree->SetDirectory(outfile);
 
         outtree->SetMaxTreeSize(1900LL * 1024 * 1024);
         outtree->SetAutoSave(0);
 
-        ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, BufferSize);
-
+        ThreadedBinToTree(digitisers, outtree, tdiff, CHUNK, BufferSize,&ADChists);
         TFile* currentFile = outtree->GetCurrentFile();
         if (currentFile) {
             currentFile->Write("", TObject::kOverwrite);

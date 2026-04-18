@@ -24,7 +24,8 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                     TTree* outtree,
                     Long64_t tdiff=gTS_Diff,
                     int CHUNK = gBinChunkDefaultSize,
-                    int BufferSize=gBuildBuffDefaultSize);
+                    int BufferSize=gBuildBuffDefaultSize,
+                    DigitiserAdcHistograms* ADChists=nullptr);
 
 // Convenience entry point for building only an EventTree from a bin stem.
 // This function creates the digitiser list and output ROOT objects itself,

@@ -4,8 +4,12 @@
 
 #include <TString.h>
 #include <TSystem.h>
+#include <TH1F.h>
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 
 #include <Globals.h>
@@ -40,7 +44,11 @@ public:
     virtual TString buildFileName() = 0;
     virtual bool decode(UShort_t* buf, Event& ev) = 0;
 
+    virtual int channels(){ return 1; }
+    virtual std::string name(){ return "APV8104"; }
+
     Long64_t getLastTs() const { return lastTs; }
+    int getModule() const { return mod; }
 
     bool openNextFile() {
         if (file.is_open()) file.close();
@@ -119,6 +127,7 @@ class APV8104 : public DigitiserBase {
 public:
     APV8104(TString runName,int module) : DigitiserBase(runName, module) {}
     static int ModuleZeroIndex;
+    std::string name(){ return "APV8104"; }
 
     static TString buildFileName(TString rn,int filei) {
         TString name;
@@ -152,6 +161,8 @@ public:
     APV8032(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
     static int ModuleZeroIndex;
+    int channels(){ return 32; }
+    std::string name(){ return "APV8032"; }
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
@@ -189,6 +200,8 @@ public:
     APV8016A(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
     static int ModuleZeroIndex;
+    int channels(){ return 16; }
+    std::string name(){ return "APV8016A"; }
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
@@ -218,7 +231,31 @@ public:
 };
 
 
+
+struct DigitiserAdcHistograms {
+    std::vector<TH1F*> histograms;
+
+    DigitiserAdcHistograms() = default;
+    DigitiserAdcHistograms(const DigitiserAdcHistograms&) = delete;
+    DigitiserAdcHistograms& operator=(const DigitiserAdcHistograms&) = delete;
+    DigitiserAdcHistograms(DigitiserAdcHistograms&& other) noexcept;
+    DigitiserAdcHistograms& operator=(DigitiserAdcHistograms&& other) noexcept;
+    ~DigitiserAdcHistograms();
+
+    void Fill(int module, int channel, double value);
+    Int_t Write(const char* name = nullptr, Int_t option = 0, Int_t bufsize = 0);
+
+private:
+    std::vector<int> moduleOffsets;
+    std::vector<int> moduleChannels;
+    std::vector<bool> ownedByThis;
+
+    void Clear();
+
+    friend DigitiserAdcHistograms BuildDigitiserAdcHistograms(const std::vector<std::unique_ptr<DigitiserBase>>& digitisers);
+};
+
 std::vector<std::unique_ptr<DigitiserBase>>  BuildDigitiserList(const TString& runName);
+DigitiserAdcHistograms BuildDigitiserAdcHistograms(const std::vector<std::unique_ptr<DigitiserBase>>& digitisers);
 
 #endif
-
