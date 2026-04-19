@@ -121,8 +121,6 @@ std::string make_buffer_bar(size_t size,size_t max,size_t idx,size_t width = 24)
 
 std::string make_queue_bar(size_t size,size_t max, size_t width = 20);
 
-void QueueMonitorThread(ThreadSafeQueue<std::vector<Event>>& queue, size_t MAX_QUEUE, size_t BUFFERSIZE, std::atomic<bool>& done_flag);
-
 void BuildMonitorThread(size_t builtEventBudget,
                         size_t bufferSize,
                         size_t refillTarget,

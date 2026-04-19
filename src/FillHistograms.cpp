@@ -3,32 +3,13 @@
 DetHitScratch& DetHitScratchBuffer()
 {
     thread_local DetHitScratch scratch;
+    scratch.Clear();
     return scratch;
 }
 
 DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
 {
     DetHitScratch& scratch = DetHitScratchBuffer();
-
-    scratch.hpge.clear();
-    scratch.laBr.clear();
-    scratch.siDeltaE.clear();
-    scratch.si.clear();
-    scratch.siDeltaE_B.clear();
-    scratch.si_B.clear();
-    scratch.solar.clear();
-    scratch.dice.clear();
-    scratch.cdte.clear();
-
-    scratch.hpge.reserve(event.Size());
-    scratch.laBr.reserve(event.Size());
-    scratch.siDeltaE.reserve(event.Size());
-    scratch.si.reserve(event.Size());
-    scratch.siDeltaE_B.reserve(event.Size());
-    scratch.si_B.reserve(event.Size());
-    scratch.solar.reserve(event.Size());
-    scratch.dice.reserve(event.Size());
-    scratch.cdte.reserve(event.Size());
 
     for (size_t i = 0; i < event.Size(); ++i) {
         const UShort_t mod = event.Mod[i];
@@ -72,7 +53,7 @@ DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
 
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 {
-    // DetHitScratch& detHits = BuildDetHitCategories(event);
+    DetHitScratch& detHits = BuildDetHitCategories(event);
     // auto& hpge = detHits.hpge;
     // auto& si = detHits.si;
 

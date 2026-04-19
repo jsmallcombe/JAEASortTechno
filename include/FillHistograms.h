@@ -15,6 +15,19 @@ struct DetHitScratch {
     std::vector<DetHit> solar;
     std::vector<DetHit> dice;
     std::vector<DetHit> cdte;
+
+    void Clear()
+    {
+        hpge.clear();
+        laBr.clear();
+        siDeltaE.clear();
+        si.clear();
+        siDeltaE_B.clear();
+        si_B.clear();
+        solar.clear();
+        dice.clear();
+        cdte.clear();
+    }
 };
 
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event);

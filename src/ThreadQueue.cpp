@@ -88,54 +88,6 @@ size_t dynamic_queue_bar_width(size_t maxSeen)
     return std::min<size_t>(10, maxSeen);
 }
 
-void QueueMonitorThread(ThreadSafeQueue<std::vector<Event>>& queue,
-             size_t MAX_QUEUE,
-             size_t BUFFERSIZE,
-             std::atomic<bool>& done_flag)
-{
-    using namespace std::chrono_literals;
-    
-    const size_t BUFFER_MAX = BUFFERSIZE * 2;
-    
-    int w1 = std::to_string(MAX_QUEUE).size();
-    
-    while (!done_flag.load()) {
-        
-        size_t qsize = queue.size();
-        size_t bsize = g_buffer_size.load();
-        size_t idx   = g_idx.load();
-        size_t read   = g_ReadCount.load();
-        size_t built   = g_BuiltCount.load();
-        
-        std::string qbar = make_queue_bar(qsize, MAX_QUEUE,10);
-        std::string bbar = make_buffer_bar(bsize, BUFFER_MAX, idx);
-        
-        // Colour logic (simple)
-        const char* qcolor = (qsize > MAX_QUEUE * 0.8) ? CLR_RED : CLR_GREEN;
-        const char* bcolor = (bsize > BUFFER_MAX * 0.8) ? CLR_YELLOW : CLR_CYAN;
-        
-        {
-            std::cout
-//             << "\r"
-            << "\r\033[K"  // carriage return + clear line
-            << "Q " << qcolor << "[" << qbar << "]" << CLR_RESET
-            << std::setw(w1) << qsize
-//             << " " << qsize << "/" << MAX_QUEUE
-            << " | B " << bcolor << "[" << bbar << "]" << CLR_RESET
-//             << " " << bsize << "/" << BUFFER_MAX
-//             << " idx:" << idx
-//             << " pop:" << pop
-            <<read<< ":" << built
-//             << "      "   // padding to clear leftovers
-            << std::flush;
-        }
-        
-        std::this_thread::sleep_for(400ms);
-    }
-    
-    std::cout << std::endl;
-}
-
 void BuildMonitorThread(size_t builtEventBudget,
              size_t bufferSize,
              size_t refillTarget,
