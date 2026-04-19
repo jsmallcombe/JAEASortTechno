@@ -5,6 +5,49 @@
 #include <cstring>
 #include <vector>
 
+// =========================
+// Event structure
+// =========================
+struct Event {
+    Long64_t ts = -1;
+    UShort_t mod = 0;
+    UShort_t ch = 0;
+    UShort_t adc = 0;
+
+    // Future expansion
+//     UShort_t neg = 0;
+//     UShort_t unit = 0;
+//     UShort_t wavFlag = 0;
+//     std::vector<UShort_t> waveform;
+    
+    bool operator<(const Event& other) const {
+        return ts < other.ts;
+    }
+};
+
+// =========================
+// Safe timestamp diff
+// =========================
+#include <limits>
+#include <iostream>
+inline UShort_t SafeTsDiff(Long64_t ts, Long64_t firstTs)
+{
+    Long64_t diff = ts - firstTs;
+    
+    if (diff < 0 || diff > std::numeric_limits<UShort_t>::max()) {
+        std::cout << "[TS ERROR] diff=" << diff << std::endl;
+        
+        if (diff < 0) diff = 0;
+        if (diff > std::numeric_limits<UShort_t>::max())
+            diff = std::numeric_limits<UShort_t>::max();
+    }
+    
+    return (UShort_t)diff;
+}
+
+// =========================
+// BuiltEvent
+// =========================
 struct BuiltEvent {
     std::vector<UShort_t> Ts;
     std::vector<UShort_t> Mod;
@@ -27,6 +70,23 @@ struct BuiltEvent {
     size_t Size() const
     {
         return Ts.size();
+    }
+
+    void StartEvent(const Event& ev)
+    {
+        Clear();
+        Ts.push_back(0);
+        Mod.push_back(ev.mod);
+        Ch.push_back(ev.ch);
+        Adc.push_back(ev.adc);
+    }
+
+    void AppendHit(const Event& ev, Long64_t firstTs)
+    {
+        Ts.push_back(SafeTsDiff(ev.ts, firstTs));
+        Mod.push_back(ev.mod);
+        Ch.push_back(ev.ch);
+        Adc.push_back(ev.adc);
     }
 };
 
@@ -116,5 +176,20 @@ private:
     std::vector<UShort_t>* ChBranch = nullptr;
     std::vector<UShort_t>* AdcBranch = nullptr;
 };
+
+
+// Create one chunk buffer that mirrors the same branch-style interface as
+// the output tree, so the builder can write tree and histogram handoff data
+// through the same event vectors with minimal extra logic.
+inline BuiltEventChunkBuffer* CreateBuiltEventChunkBuffer(BuiltEvent& event)
+{
+    BuiltEventChunkBuffer* chunk = new BuiltEventChunkBuffer();
+    chunk->Branch("Ts", &event.Ts);
+    chunk->Branch("Mod", &event.Mod);
+    chunk->Branch("Ch", &event.Ch);
+    chunk->Branch("Adc", &event.Adc);
+    return chunk;
+}
+
 
 #endif

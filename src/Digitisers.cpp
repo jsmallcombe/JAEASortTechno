@@ -56,6 +56,19 @@ void DigitiserAdcHistograms::Fill(int module, int channel, double value)
     histograms[offset + channel]->Fill(value);
 }
 
+void DigitiserAdcHistograms::SetDirectory(TDirectory* directory)
+{
+    for (size_t i = 0; i < histograms.size(); ++i) {
+        TH1F* histogram = histograms[i];
+        if (!histogram) {
+            continue;
+        }
+
+        histogram->SetDirectory(directory);
+        ownedByThis[i] = (directory == nullptr);
+    }
+}
+
 Int_t DigitiserAdcHistograms::Write(const char* name, Int_t option, Int_t bufsize)
 {
     Int_t bytesWritten = 0;

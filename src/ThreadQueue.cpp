@@ -181,7 +181,7 @@ void BuildMonitorThread(size_t builtEventBudget,
 
         if (showBuiltQueue) {
             std::cout
-                << " | E " << ecolor << "[" << ebar << "] " << CLR_RESET
+                << " | E " << ecolor << "[" << ebar << "]" << CLR_RESET
                 << format_thousands(queuedBuiltMaxSeen);
         }
 

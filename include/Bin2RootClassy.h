@@ -3,6 +3,7 @@
 
 #include <Digitisers.h>
 #include <Globals.h>
+#include <BuiltEvent.h>
 
 #include <TFile.h>
 #include <TTree.h>

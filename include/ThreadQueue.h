@@ -14,6 +14,7 @@
 #include <chrono>
 
 #include <Globals.h>
+#include <BuiltEvent.h>
 
 inline std::atomic<size_t> g_buffer_size{0};
 inline std::atomic<size_t> g_idx{0};

@@ -4,6 +4,7 @@
 
 #include <TString.h>
 #include <TSystem.h>
+#include <TDirectory.h>
 #include <TH1F.h>
 #include <iostream>
 #include <fstream>
@@ -13,6 +14,8 @@
 
 
 #include <Globals.h>
+#include <BuiltEvent.h>
+
 
 // =========================
 // Base digitiser
@@ -243,6 +246,7 @@ struct DigitiserAdcHistograms {
     ~DigitiserAdcHistograms();
 
     void Fill(int module, int channel, double value);
+    void SetDirectory(TDirectory* directory);
     Int_t Write(const char* name = nullptr, Int_t option = 0, Int_t bufsize = 0);
 
 private:

@@ -471,7 +471,7 @@ bool JAEASortIO::ValidateFiles(){
             std::cout<<"Raw run .bin file stem used "<<BinInputStem<<std::endl;
 
             if(DoHistSort&&HistogramOutFilename.Length() == 0) {
-                HistogramOutFilename = BinInputStem+"_bist.root";                
+                HistogramOutFilename = BinInputStem+"_hist.root";                
             }
         }
 
@@ -503,11 +503,12 @@ bool JAEASortIO::ValidateFiles(){
         return false;
     }
 
-    if (EventInputFiles.size() > 0 && HistogramOutFilename.Length() == 0) {
+    int fi=EventInputFiles.size();
+    if (fi > 0 && HistogramOutFilename.Length() == 0) {
         DoHistSort=true;
         HistogramOutFilename = EventInputFiles[0];
-        int i=EventInputFiles.size();
-        TString suffix="."+TString(i)+"_gist.root";
+        TString suffix="_hist.root";
+        if(fi>1) suffix=TString::Format("x%d_hist.root", fi);
         HistogramOutFilename.Replace(HistogramOutFilename.Length() - 5, 5, suffix);
     }
 

@@ -17,16 +17,6 @@
 #include <BuiltEvent.h>
 #include <Digitisers.h>
 
-// Low-level threaded bin-to-tree driver.
-// Starts the producer and tree-writing consumer threads around an existing
-// digitiser list and an already-created output TTree.
-int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
-                    TTree* outtree,
-                    Long64_t tdiff=gTS_Diff,
-                    int CHUNK = gBinChunkDefaultSize,
-                    int BufferSize=gBuildBuffDefaultSize,
-                    DigitiserAdcHistograms* ADChists=nullptr);
-
 // Convenience entry point for building only an EventTree from a bin stem.
 // This function creates the digitiser list and output ROOT objects itself,
 // then runs the threaded bin-to-tree pipeline with the requested settings.
@@ -36,20 +26,6 @@ void MakeEventTreeFromBin(TString infilename,
                         int CHUNK = gBinChunkDefaultSize,
                         int BufferSize=gBuildBuffDefaultSize,
                         Long64_t TS_TOLERANCE = gTS_TOLERANCE);
-
-// Convenience entry point for the combined bin-to-tree and/or histogram path.
-// Uses an existing digitiser list and runs the direct raw-bin event builder.
-// Depending on the caller flags, it can write only the EventTree, only
-// histograms, or both by queueing completed built-event chunks for workers.
-int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
-                                      TString histogramOutfilename,
-                                      Long64_t tdiff = gTS_Diff,
-                                      unsigned int histWorkers = 0,
-                                      int CHUNK = gBinChunkDefaultSize,
-                                      int BufferSize = gBuildBuffDefaultSize,
-                                      Long64_t TS_TOLERANCE = gTS_TOLERANCE,
-                                      TString treeOutfilename = "",
-                                      Long64_t histChunkEvents = gHistChunkDefaultEvents);
 
 // High-level threaded histogram sort for an existing EventTree/TChain input.
 // Reads built events from ROOT rather than raw bin data and writes only the
