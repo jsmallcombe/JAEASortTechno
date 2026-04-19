@@ -5,6 +5,8 @@
 #include <regex>
 #include <unordered_set>
 
+#include "EmbeddedManual.h"
+
 JAEASortIO* gIO = nullptr;
 
 namespace {
@@ -53,24 +55,6 @@ bool IsSplitRootFile(const std::filesystem::path& path)
 {
     static const std::regex splitPattern(".*_[0-9]+$");
     return std::regex_match(path.stem().string(), splitPattern);
-}
-
-std::filesystem::path GetManualPath()
-{
-    const std::filesystem::path sourcePath(__FILE__);
-    const std::filesystem::path sourceDir = sourcePath.parent_path();
-
-    const std::filesystem::path candidate = sourceDir / ".." / "README";
-    if (std::filesystem::exists(candidate)) {
-        return candidate.lexically_normal();
-    }
-
-    const std::filesystem::path localCandidate = std::filesystem::current_path() / "README";
-    if (std::filesystem::exists(localCandidate)) {
-        return localCandidate.lexically_normal();
-    }
-
-    return candidate.lexically_normal();
 }
 
 std::string WildcardToRegex(const std::string& pattern)
@@ -373,17 +357,11 @@ void JAEASortIO::ReadInfoFile(string filename){
     }	
 }
 
+#include <cstdlib>
 void JAEASortIO::PrintManual(std::ostream& os)
 {
-    const std::filesystem::path manualPath = GetManualPath();
-    std::ifstream manualFile(manualPath);
-
-    if (!manualFile.is_open()) {
-        os << "Unable to open manual file: " << manualPath.string() << '\n';
-        return;
-    }
-
-    os << manualFile.rdbuf();
+    os.write(reinterpret_cast<const char*>(README), README_len);
+    std::exit(0);
 }
 
 void JAEASortIO::AddInputRootSpec(const TString& inputSpec)

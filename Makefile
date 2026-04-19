@@ -11,8 +11,11 @@ CC = g++
 CFLAGS = -std=c++11 -g -fPIC $(ROOT_GCC_FLAGS) -I$(INCLUDE) 
 LIBRS = -L$(INCLUDE) $(ROOT_LIBS) -L$(LIB) -L$(LIB)/bin
 
-OBJECTS = $(patsubst src/%.cpp,bin/%.o,$(wildcard src/*.cpp))
+OBJDIR = bin/obj
+
+OBJECTS = $(patsubst src/%.cpp,$(OBJDIR)/%.o,$(wildcard src/*.cpp))
 DEPS = $(OBJECTS:.o=.d)
+MANUAL_HEADER = include/EmbeddedManual.h
 # SYSHEAD = $(wildcard include/*.h)
 # HEAD = $(patsubst %.h,$(shell pwd)/%.h,$(SYSHEAD))
 PROG = $(patsubst programs/%.C,bin/%,$(wildcard programs/*.C))
@@ -23,7 +26,17 @@ TARG = bin/JAEASort
 DUMMY: $(OBJECTS) $(PROG)
 	ls
 
-bin/%.o: src/%.cpp
+$(MANUAL_HEADER): README
+	@if command -v xxd >/dev/null 2>&1; then \
+		xxd -i $< $@; \
+	else \
+		echo "Skipping embedded manual regeneration: xxd not found"; \
+	fi
+
+$(OBJDIR)/IO.o: $(MANUAL_HEADER)
+
+$(OBJDIR)/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $< $(LIBRS)
 	
 bin/%: programs/%.C $(OBJECTS)
@@ -83,8 +96,7 @@ bin/%: programs/%.C $(OBJECTS)
 # 	rootcint -f $@ -c -I$(INCLUDE) $(HEAD) bin/Linkdef.h
 	
 clean:
-	rm -f $(LIB)/bin/*.o
-	rm -f $(LIB)/bin/*.d
+	rm -rf $(LIB)/$(OBJDIR)
 	rm -f $(LIB)/$(PROG)
 
 -include $(DEPS)

@@ -4,7 +4,7 @@ JAEASortIO input syntax
     -bin /filepath/runprefix
       Or provide one non-.root argument to use as the digitiser run stem.
   event tree output (from bin):
-    -tree
+    -tree / -T
       Writes the event tree to /filepath/runprefix.root.
     -treepath /path/to/output
       Rewrites the event tree output to /path/to/output/runprefix.root.
