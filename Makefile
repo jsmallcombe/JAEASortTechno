@@ -19,11 +19,11 @@ MANUAL_HEADER = include/EmbeddedManual.h
 # SYSHEAD = $(wildcard include/*.h)
 # HEAD = $(patsubst %.h,$(shell pwd)/%.h,$(SYSHEAD))
 PROG = $(patsubst programs/%.C,bin/%,$(wildcard programs/*.C))
+SHAREDLIB = bin/libJAEASort.so
 
-SHAREDLIB = bin/SS.so
 TARG = bin/JAEASort
 
-DUMMY: $(OBJECTS) $(PROG)
+DUMMY: $(OBJECTS) $(SHAREDLIB) $(PROG)
 	ls
 
 $(MANUAL_HEADER): README
@@ -38,6 +38,10 @@ $(OBJDIR)/IO.o: $(MANUAL_HEADER)
 $(OBJDIR)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $< $(LIBRS)
+
+$(SHAREDLIB): $(OBJECTS)
+	@mkdir -p $(dir $@)
+	$(CC) -shared -o $@ $(OBJECTS) $(LIBRS)
 	
 bin/%: programs/%.C $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $< -I. $(OBJECTS)  $(LIBRS) 
@@ -97,6 +101,7 @@ bin/%: programs/%.C $(OBJECTS)
 	
 clean:
 	rm -rf $(LIB)/$(OBJDIR)
+	rm -f $(LIB)/$(SHAREDLIB)
 	rm -f $(LIB)/$(PROG)
 
 -include $(DEPS)

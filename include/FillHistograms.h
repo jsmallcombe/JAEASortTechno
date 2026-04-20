@@ -4,29 +4,20 @@
 #include <BuiltEvent.h>
 #include <ThreadedHistograms.h>
 #include <Detectors.h>
+#include <DetectorsAdv.h>
 
 struct DetHitScratch {
-    std::vector<DetHit> hpge;
-    std::vector<DetHit> laBr;
-    std::vector<DetHit> siDeltaE;
-    std::vector<DetHit> si;
-    std::vector<DetHit> siDeltaE_B;
-    std::vector<DetHit> si_B;
-    std::vector<DetHit> solar;
-    std::vector<DetHit> dice;
-    std::vector<DetHit> cdte;
+    std::vector<HPGeHit> hpge;
+    std::vector<CdTeHit> cdte;
+    std::vector<DetHit> hits;
+    S3Det s3;
 
     void Clear()
     {
         hpge.clear();
-        laBr.clear();
-        siDeltaE.clear();
-        si.clear();
-        siDeltaE_B.clear();
-        si_B.clear();
-        solar.clear();
-        dice.clear();
         cdte.clear();
+        hits.clear();
+        s3.Clear();
     }
 };
 

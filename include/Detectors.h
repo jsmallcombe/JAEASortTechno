@@ -32,7 +32,7 @@ class DetHit{
     
     public:
         
-    enum DetType{HPGe,LaBr,SiDeltaE,Si,SiDeltaE_B,Si_B,Solar,Dice,CdTe};
+    enum DetType{HPGe,LaBr,SiDeltaE,Si,SiDeltaE_B,Si_B,Solar,Dice,CdTe,S3Ring,S3Sector};
     
     static void SetCalibrationParam(UShort_t Mod,UShort_t Chan,double Pol0=0, double Pol1=1,double Pol2=0);
     static array<double,3> GetCal(UShort_t Mod,UShort_t Chan);
@@ -54,10 +54,9 @@ class DetHit{
     UShort_t fModule;
     UShort_t fChannel;
     
-    bool fEnergySet;
+    mutable bool fEnergySet;
     mutable Double_t fEnergy{0.};    //!<! Energy of the Hit.
     
-
     public:
     
     DetHit(){}; 
@@ -81,7 +80,7 @@ class DetHit{
         return *this;
     };
     
-    Double_t Energy();
+    Double_t Energy() const;
     Double_t Time() const {return fTimeStamp-TOff();}
     Double_t TimeRaw() const {return fTimeStamp;}
     UShort_t Mod() const {return fModule;}

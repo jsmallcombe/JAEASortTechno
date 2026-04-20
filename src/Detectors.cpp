@@ -87,7 +87,7 @@ void DetHit::SetTOff(UShort_t Mod,UShort_t Chan,Double_t toff){
 ////////////////////////////
 
 
-double DetHit::Energy(){
+double DetHit::Energy() const{
     
     if(fEnergySet)return fEnergy;
     

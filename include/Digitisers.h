@@ -48,7 +48,7 @@ public:
     virtual bool decode(UShort_t* buf, Event& ev) = 0;
 
     virtual int channels(){ return 1; }
-    virtual std::string name(){ return "APV8104"; }
+    virtual std::string name(){ return "-"; }
 
     Long64_t getLastTs() const { return lastTs; }
     int getModule() const { return mod; }
@@ -130,7 +130,7 @@ class APV8104 : public DigitiserBase {
 public:
     APV8104(TString runName,int module) : DigitiserBase(runName, module) {}
     static int ModuleZeroIndex;
-    std::string name(){ return "APV8104"; }
+    std::string name()override{ return "APV8104"; }
 
     static TString buildFileName(TString rn,int filei) {
         TString name;
@@ -164,8 +164,8 @@ public:
     APV8032(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
     static int ModuleZeroIndex;
-    int channels(){ return 32; }
-    std::string name(){ return "APV8032"; }
+    int channels()override{ return 32; }
+    std::string name()override{ return "APV8032"; }
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
@@ -203,8 +203,8 @@ public:
     APV8016A(TString runName,int module, int filemod)
         : DigitiserBase(runName, module),fmod(filemod) {}
     static int ModuleZeroIndex;
-    int channels(){ return 16; }
-    std::string name(){ return "APV8016A"; }
+    int channels()override{ return 16; }
+    std::string name()override{ return "APV8016A"; }
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;

@@ -19,35 +19,21 @@ DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
             case DetHit::HPGe:
                 scratch.hpge.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
                 break;
-            case DetHit::LaBr:
-                scratch.laBr.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::SiDeltaE:
-                scratch.siDeltaE.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::Si:
-                scratch.si.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::SiDeltaE_B:
-                scratch.siDeltaE_B.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::Si_B:
-                scratch.si_B.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::Solar:
-                scratch.solar.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
-            case DetHit::Dice:
-                scratch.dice.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
-                break;
             case DetHit::CdTe:
                 scratch.cdte.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
                 break;
+            case DetHit::S3Ring:
+                scratch.s3.AddRingHit(event.Ts[i], event.Adc[i], mod, ch);
+                break;
+            case DetHit::S3Sector:
+                scratch.s3.AddSectorHit(event.Ts[i], event.Adc[i], mod, ch);
+                break;
             default:
+                scratch.hits.emplace_back(event.Ts[i], event.Adc[i], mod, ch);
                 break;
         }
     }
-
+    
     return scratch;
 }
 
