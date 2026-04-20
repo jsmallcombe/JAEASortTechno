@@ -223,7 +223,7 @@ void JAEASortIO::WriteCalibration(string filename){
             
             const auto& cal = DetHit::ChanCal[i][j];
             outputFile << i << ' ' << j << ' ' << cal.p0 << ' ' << cal.p1 << ' ' << cal.p2 << ' '
-                       << cal.DetectorType << ' ' << cal.Index << ' ' << cal.TOff << '\n';
+                       << DetHit::DetTypeName(cal.DetectorType) << ' ' << cal.Index << ' ' << cal.TOff << '\n';
         }
     }
     
@@ -251,7 +251,19 @@ void JAEASortIO::ReadCalibration(string filename){
         
         int i, j;
         ChannelCalibration cal;
-        if (iss >> i >> j >> cal.p0 >> cal.p1 >> cal.p2 >> cal.DetectorType >> cal.Index >> cal.TOff) {
+        std::string detTypeToken;
+        if (iss >> i >> j >> cal.p0 >> cal.p1 >> cal.p2 >> detTypeToken >> cal.Index >> cal.TOff) {
+            try {
+                int detTypeValue = 0;
+                if (stringToInt(detTypeToken, detTypeValue)) {
+                    cal.DetectorType = detTypeValue;
+                } else {
+                    cal.DetectorType = DetHit::ParseDetType(detTypeToken);
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error parsing detector type in line: " << line << " (" << e.what() << ")" << std::endl;
+                continue;
+            }
             
              // Resize the outer vector if necessary
             if (i >= static_cast<int>(DetHit::ChanCal.size())) {

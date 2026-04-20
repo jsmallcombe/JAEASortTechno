@@ -1,9 +1,24 @@
 #include <Detectors.h>
 #include <Globals.h>
 
+#include <stdexcept>
+
 vector<vector<ChannelCalibration>> DetHit::ChanCal;
 namespace {
 const ChannelCalibration gDefaultCalibration{};
+const char* const gDetTypeNames[] = {
+    "HPGe",
+    "LaBr",
+    "SiDeltaE",
+    "Si",
+    "SiDeltaE_B",
+    "Si_B",
+    "Solar",
+    "Dice",
+    "CdTe",
+    "S3Ring",
+    "S3Sector"
+};
 }
 
 void DetHit::ExpandCal(UShort_t Mod,UShort_t Chan){
@@ -60,9 +75,31 @@ UShort_t DetHit::GetDetType(UShort_t Mod,UShort_t Chan){
     return FindCalibration(Mod, Chan).DetectorType;
 }
 
+const char* DetHit::DetTypeName(UShort_t DetT)
+{
+    if (DetT >= sizeof(gDetTypeNames) / sizeof(gDetTypeNames[0])) {
+        throw std::out_of_range("Unknown detector type enum value: " + std::to_string(DetT));
+    }
+    return gDetTypeNames[DetT];
+}
+
+UShort_t DetHit::ParseDetType(const std::string& DetT)
+{
+    for (UShort_t i = 0; i < sizeof(gDetTypeNames) / sizeof(gDetTypeNames[0]); ++i) {
+        if (DetT == gDetTypeNames[i]) {
+            return i;
+        }
+    }
+    throw std::invalid_argument("Unknown detector type name: " + DetT);
+}
+
 void DetHit::SetDetType(UShort_t Mod,UShort_t Chan,UShort_t DetT){
     ExpandCal(Mod,Chan); 
     ChanCal[Mod][Chan].DetectorType=DetT; 
+}
+
+void DetHit::SetDetType(UShort_t Mod,UShort_t Chan,const std::string& DetT){
+    SetDetType(Mod, Chan, ParseDetType(DetT));
 }
 
 UShort_t DetHit::GetIndex(UShort_t Mod,UShort_t Chan){

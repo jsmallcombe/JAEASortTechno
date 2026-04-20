@@ -3,6 +3,7 @@
 
 #include <TVector3.h>
 #include <array>
+#include <string>
 #include <vector>
 
 
@@ -43,8 +44,11 @@ class DetHit{
     static Double_t GetTOff(UShort_t Mod,UShort_t Chan);
     
     static void SetDetType(UShort_t Mod,UShort_t Chan,UShort_t DetT);
+    static void SetDetType(UShort_t Mod,UShort_t Chan,const std::string& DetT);
     static void SetIndex(UShort_t Mod,UShort_t Chan,UShort_t Index);
     static void SetTOff(UShort_t Mod,UShort_t Chan,Double_t toff);
+    static const char* DetTypeName(UShort_t DetT);
+    static UShort_t ParseDetType(const std::string& DetT);
     
     
     private :
