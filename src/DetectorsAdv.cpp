@@ -10,8 +10,9 @@ constexpr double kPi = 3.14159265358979323846;
 }
 
 bool S3Det::fPreferSector = false;
-bool S3Det::fAllowMultiHit = true;
-bool S3Det::fKeepShared = false;
+bool S3Det::fAllowMultiHit = false;
+bool S3Det::fKeepShared = true;
+bool S3Det::fFlipPhi = false;
 
 int S3Det::fRingNumber = 24;
 int S3Det::fSectorNumber = 32;
@@ -19,10 +20,11 @@ double S3Det::fOffsetPhiCon = 0.5 * kPi;
 double S3Det::fOffsetPhiSet = -22.5 * kPi / 180.0;
 double S3Det::fOuterDiameter = 70.0;
 double S3Det::fInnerDiameter = 22.0;
-double S3Det::fTargetDistance = 31.0;
-double S3Det::fFrontBackTime = 75.0;
-double S3Det::fFrontBackEnergy = 0.9;
-double S3Det::fFrontBackOffset = 0.0;
+double S3Det::fTargetDistance = -30.0;
+
+double S3Det::fFrontBackTime = 30.0;
+double S3Det::fFrontBackEnergy = 0.95;
+double S3Det::fFrontBackOffset = 150.0;
 
 XYZVector S3Hit::Pos(bool smear) const
 {
@@ -149,7 +151,7 @@ const DetHit* S3Det::GetSectorHit(std::size_t i) const
 
 bool S3Det::TimeMatches(const DetHit& ring, const DetHit& sector) const
 {
-    return std::abs(ring.Time() - sector.Time()) < fFrontBackTime;
+    return std::abs(ring.Time() - sector.Time()) <= fFrontBackTime;
 }
 
 bool S3Det::EnergyMatches(double ringEnergy, double sectorEnergy) const
@@ -214,7 +216,7 @@ void S3Det::BuildHits()
         }
     }
 
-    if(fAllowMultiHit) {
+    if(fAllowMultiHit||fKeepShared) {
         // Shared ring loop.
         for(std::size_t i = 0; i < fRingHits.size(); ++i) {
             if(usedRing[i]) {
@@ -240,18 +242,21 @@ void S3Det::BuildHits()
                     }
 
                     const int sectorSep = std::abs(static_cast<int>(fSectorHits[j].Index()) - static_cast<int>(fSectorHits[k].Index()));
-                    const bool adjacentSector = sectorSep == 1 || sectorSep == (fSectorNumber - 1);
+                    // const bool adjacentSector = sectorSep == 1 || sectorSep == (fSectorNumber - 1);
+                    const bool adjacentSector = true;//bug hunting
 
                     if(adjacentSector) {
-                        // Same ring and neighbour sectors, almost certainly charge sharing.
+                        // Same ring and neighbour sectors, almost certainly charge sharing. Ring becomes primary.
                         if(fKeepShared) {
                             const DetHit* dominantSector = sectorEnergy[j] >= sectorEnergy[k] ? &fSectorHits[j] : &fSectorHits[k];
                             AddPixel(&fRingHits[i], dominantSector, &fRingHits[i]);
                         }
                     } else {
-                        // Two separate hits with a shared ring: the ring is the single side and stays primary.
-                        AddPixel(&fRingHits[i], &fSectorHits[j], &fRingHits[i]);
-                        AddPixel(&fRingHits[i], &fSectorHits[k], &fRingHits[i]);
+                        if(fAllowMultiHit) {
+                        // Two separate hits with a shared ring: each primary is sector.
+                            AddPixel(&fRingHits[i], &fSectorHits[j], &fSectorHits[j]);
+                            AddPixel(&fRingHits[i], &fSectorHits[k], &fSectorHits[k]);
+                        }
                     }
 
                     usedRing[i] = true;
@@ -286,8 +291,8 @@ void S3Det::BuildHits()
                     }
 
                     const int ringSep = std::abs(static_cast<int>(fRingHits[j].Index()) - static_cast<int>(fRingHits[k].Index()));
-                    const bool adjacentRing = ringSep == 1;
-
+                    // const bool adjacentRing = ringSep == 1;
+                    const bool adjacentRing = true;//bug hunting
                     if(adjacentRing) {
                         // Same sector and neighbour rings, almost certainly charge sharing.
                         if(fKeepShared) {
@@ -295,9 +300,11 @@ void S3Det::BuildHits()
                             AddPixel(dominantRing, &fSectorHits[i], &fSectorHits[i]);
                         }
                     } else {
-                        // Two separate hits with a shared sector: the sector is the single side and stays primary.
-                        AddPixel(&fRingHits[j], &fSectorHits[i], &fSectorHits[i]);
-                        AddPixel(&fRingHits[k], &fSectorHits[i], &fSectorHits[i]);
+                        if(fAllowMultiHit) {
+                            // Two separate hits with a shared sector: the sector is the single side.
+                            AddPixel(&fRingHits[j], &fSectorHits[i], &fRingHits[j]);
+                            AddPixel(&fRingHits[k], &fSectorHits[i], &fRingHits[k]);
+                        }
                     }
 
                     usedSector[i] = true;
@@ -313,12 +320,18 @@ void S3Det::BuildHits()
 
 XYZVector S3Det::GetPosition(int ring, int sector, bool smear)
 {
+    // S3 ring and sector indices are treated as 0-based here: ring 0 is the inner ring,
+    // and sector 0 starts at phi=0 before the fixed connector/setup offsets.
     const double ringWidth = (fOuterDiameter - fInnerDiameter) * 0.5 / static_cast<double>(fRingNumber);
     const double innerRadius = fInnerDiameter * 0.5;
     const double phiWidth = 2.0 * kPi / static_cast<double>(fSectorNumber);
 
     double radius = innerRadius + ringWidth * (static_cast<double>(ring) + 0.5);
-    double phi = phiWidth * static_cast<double>(sector) + fOffsetPhiCon + fOffsetPhiSet;
+    double phi = phiWidth * static_cast<double>(sector) + fOffsetPhiCon;
+    if(fFlipPhi) {
+        phi = -phi;
+    }
+    phi += fOffsetPhiSet;
 
     if(smear) {
         const double sep = ringWidth * 0.025;
@@ -333,12 +346,45 @@ XYZVector S3Det::GetPosition(int ring, int sector, bool smear)
     return XYZVector(std::cos(phi) * radius, std::sin(phi) * radius, fTargetDistance);
 }
 
+XYZVector CdTeWorldVectors[16]{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0}
+};
+
 XYZVector CdTeHit::Pos() const
 {
+    if(Index() < 16) {
+        return CdTeWorldVectors[Index()];
+    }
     return XYZVector(0.0, 0.0, 0.0);
 }
 
+XYZVector HPGeWorldVectors[6]{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0}
+};
 XYZVector HPGeHit::Pos() const
 {
+    if(Index() < 6) {
+        return HPGeWorldVectors[Index()];
+    }
     return XYZVector(0.0, 0.0, 0.0);
 }

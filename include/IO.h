@@ -70,6 +70,7 @@ class JAEASortIO{
     
     bool TestInput(TString InputName) const;
     double GetInput(TString InputName,double=0) const;
+    bool GetBoolInput(TString InputName,bool=false) const;
 	
     TChain* DataTree(TString TreeName);
     

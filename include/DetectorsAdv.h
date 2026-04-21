@@ -85,23 +85,22 @@ public:
     const DetHit* GetRingHit(std::size_t i) const;
     const DetHit* GetSectorHit(std::size_t i) const;
 
-    static void SetFrontBackEnergy(double de) { fFrontBackEnergy = de; }
-    static double GetFrontBackEnergy() { return fFrontBackEnergy; }
+    static bool fPreferSector;
+    static bool fAllowMultiHit;
+    static bool fKeepShared;
+    static bool fFlipPhi;
 
-    static void SetFrontBackEOffset(double de) { fFrontBackOffset = de; }
-    static double GetFrontBackEOffset() { return fFrontBackOffset; }
+    static int fRingNumber;
+    static int fSectorNumber;
+    static double fOffsetPhiCon;
+    static double fOffsetPhiSet;
+    static double fOuterDiameter;
+    static double fInnerDiameter;
+    static double fTargetDistance;
 
-    static void SetFrontBackTime(double time) { fFrontBackTime = time; }
-    static double GetFrontBackTime() { return fFrontBackTime; }
-
-    static void SetPreferenceSector(bool set) { fPreferSector = set; }
-    static bool PreferenceSector() { return fPreferSector; }
-
-    static void SetMultiHit(bool set) { fAllowMultiHit = set; }
-    static bool MultiHit() { return fAllowMultiHit; }
-
-    static void SetKeepShared(bool set) { fKeepShared = set; }
-    static bool KeepShared() { return fKeepShared; }
+    static double fFrontBackTime;
+    static double fFrontBackEnergy;
+    static double fFrontBackOffset;
 
     static XYZVector GetPosition(int ring, int sector, bool smear = false);
 
@@ -116,21 +115,6 @@ private:
     std::vector<S3Hit> fHits;
     bool fPixelsBuilt{false};
 
-    static bool fPreferSector;
-    static bool fAllowMultiHit;
-    static bool fKeepShared;
-
-    static int fRingNumber;
-    static int fSectorNumber;
-    static double fOffsetPhiCon;
-    static double fOffsetPhiSet;
-    static double fOuterDiameter;
-    static double fInnerDiameter;
-    static double fTargetDistance;
-
-    static double fFrontBackTime;
-    static double fFrontBackEnergy;
-    static double fFrontBackOffset;
 };
 
 #endif

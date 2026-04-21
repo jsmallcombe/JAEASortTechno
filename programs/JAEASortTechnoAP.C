@@ -1,9 +1,8 @@
 #include <IO.h>
 #include <ThreadedSort.h>
-
 #include <TStopwatch.h>
-
 #include <iostream>
+#include <IOHelpers.h>
 
 int main(int argc, char** argv)
 {
@@ -20,7 +19,9 @@ int main(int argc, char** argv)
     bool DoHistSort = gIO->DoHistSort;
     bool Overwrite = gIO->Overwrite;
 
-    cout<<endl<<"Input summary:"<<endl;
+
+    ConfigureS3DetFromIO();
+
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff);
     int ChunkSize = gIO->GetInput("BinChunk", gBinChunkDefaultSize);
@@ -28,6 +29,7 @@ int main(int argc, char** argv)
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
     Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
 
+    cout<<endl<<"Input summary:"<<endl;
     if (gIO->TestInput("Window")) {
         std::cout << "Build window default overidden: " << TS_Diff <<" ns" << std::endl;
     }
@@ -44,12 +46,6 @@ int main(int argc, char** argv)
         std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;
     }
 
-    cout<<endl;
-    cout<<"Build window: "<<TS_Diff<<endl;
-    cout<<"Chunk size: "<<ChunkSize<<endl;
-    cout<<"Build buffer: "<<BufferSize<<endl;
-    cout<<"Timestamp tolerance: "<<TsTolerance<<endl;
-    cout<<"Histogram chunk event target: "<<HistChunkEvents<<endl;
     int status = 0;
 
     TStopwatch timer;

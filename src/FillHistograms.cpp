@@ -1,5 +1,7 @@
 #include <FillHistograms.h>
 
+#include <cmath>
+
 DetHitScratch& DetHitScratchBuffer()
 {
     thread_local DetHitScratch scratch;
@@ -46,37 +48,97 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
     for(auto& hit : hpge) {
         // H.hpge_ch_adc->Fill(hit.Ch(), hit.Adc());
+        H.hpge_chan->Fill(hit.Index(), hit.Energy());
     }
 
     for(auto& hit : cdte) {
         // H.cdte_ch_adc->Fill(hit.Ch(), hit.Adc());
+        H.cdte_chan->Fill(hit.Index(), hit.Energy());
+    }
+
+    H.s3_raw_ring_mult->Fill(s3.GetRingMultiplicity());
+    H.s3_raw_sector_mult->Fill(s3.GetSectorMultiplicity());
+    H.s3_pixel_mult->Fill(s3.GetPixelMultiplicity());
+
+    for(auto& sector : s3.SectorHits()) {
+        H.s3_raw_sector_energy->Fill(sector.Index(), sector.Energy());
+    }
+    
+    for(auto& ring : s3.RingHits()) {
+        H.s3_raw_ring_energy->Fill(ring.Index(), ring.Energy());
+
+        for(auto& sector : s3.SectorHits()) {
+            const double dT = ring.Time() - sector.Time();
+            H.s3_raw_ring_sector->Fill(sector.Index(), ring.Index());
+            H.s3_raw_ring_sector_energy->Fill(ring.Energy(), sector.Energy());
+            H.s3_raw_sector_vs_sector_ring_energy->Fill(sector.Index(), sector.Energy(), ring.Energy());
+            H.s3_raw_ring_vs_sector_ring_energy->Fill(ring.Index(), sector.Energy(), ring.Energy());
+            H.s3_raw_ring_sector_dt->Fill(dT);
+            H.s3_raw_ring_dt->Fill(ring.Index(), dT);
+            H.s3_raw_sector_dt->Fill(sector.Index(), dT);
+        }
     }
 
     for(auto& s3hit : s3.Hits()) {
-        // H.s3_ch_adc->Fill(s3hit.Ch(), s3hit.Adc());
+        H.s3_pixel_ring_sector->Fill(s3hit.Sector(), s3hit.Ring());
+        H.s3_pixel_energy->Fill(s3hit.Energy());
+        H.s3_pixel_ring_energy->Fill(s3hit.Ring(), s3hit.Energy());
+        H.s3_pixel_sector_energy->Fill(s3hit.Sector(), s3hit.Energy());
+        const XYZVector pos = s3hit.Pos(true);
+        H.s3_pixel_theta_energy->Fill(pos.Theta(), s3hit.Energy());
+        H.s3_pixel_position_xy->Fill(pos.X(), pos.Y());
+        H.s3_pixel_position_xyz->Fill(pos.X(), pos.Y(), pos.Z());
+
+        const DetHit* ring = s3hit.RingHit();
+        const DetHit* sector = s3hit.SectorHit();
+        if(ring != nullptr && sector != nullptr) {
+            H.s3_pixel_ring_sector_energy->Fill(ring->Energy(), sector->Energy());
+            H.s3_pixel_ring_sector_dt->Fill(ring->Time() - sector->Time());
+        }
+
+        for(auto& hit : hpge) {
+            const double dT = hit.Time() - s3hit.Time();
+            H.hpge_S3time->Fill(hit.Index(), dT);
+            if(dT > -100.0 && dT < 100.0) {
+                H.hpge_S3time_gate->Fill(hit.Index(), dT);
+                H.hpge_S3->Fill(hit.Index(), hit.Energy());
+            }
+        }
+
+        for(auto& hit : cdte) {
+            const double dT = hit.Time() - s3hit.Time();
+            H.cdte_S3time->Fill(hit.Index(), dT);
+            if(dT > -100.0 && dT < 100.0) {
+                H.cdte_S3time_gate->Fill(hit.Index(), dT);
+                H.cdte_S3->Fill(hit.Index(), hit.Energy());
+            }
+        }
+
     }
 
     for (size_t i = 0; i < event.Size(); ++i) {
-        H.mod_ch_adc_ts->Fill(event.Mod[i], event.Ch[i], event.Adc[i]);
 
-        if (event.Mod[i] == 2) {
-            H.mod1_ch_adc->Fill(event.Ch[i], event.Adc[i]);
+        const UShort_t mod = event.Mod[i];
+        const UShort_t ch = event.Ch[i];
+
+        if(mod <4 ) {
+            H.ModulesRaw[mod]->Fill(ch, event.Adc[i]);
         }
-        if (event.Mod[i] == 1) {
-            H.mod2_ch_adc->Fill(event.Ch[i], event.Adc[i]);
+
+        if (mod == 1) {
             for (size_t j = 0; j < event.Size(); ++j) {
                 if (event.Mod[j] == 2) {
                     const double dT = static_cast<double>(event.Ts[i]) - static_cast<double>(event.Ts[j]);
-                    H.siall->Fill(event.Ch[j], event.Ch[i]);
+                    H.siall->Fill(event.Ch[j], ch);
                     H.ring_sector_E->Fill(event.Adc[j], event.Adc[i]);
                     H.sector_ring_energy_double->Fill(static_cast<double>(event.Adc[j]), static_cast<double>(event.Adc[i]));
-                    if (event.Ch[i] != 11 && event.Ch[i] != 16 && event.Ch[i] != 17 && event.Ch[i] != 18) {
+                    if (ch != 11 && ch != 16 && ch != 17 && ch != 18) {
                         H.ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
                         H.sidt->Fill(dT);
                     }
                     if (dT > -100.0 && dT < 100.0) {
                         H.pmpt_ring_sector_E->Fill(event.Adc[j], event.Adc[i]);
-                        if (event.Ch[i] != 11 && event.Ch[i] != 16 && event.Ch[i] != 17 && event.Ch[i] != 18) {
+                        if (ch != 11 && ch != 16 && ch != 17 && ch != 18) {
                             H.pmpt_ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
                         }
 
@@ -84,8 +146,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                             H.hSectE_divRingE->Fill(static_cast<double>(event.Adc[j]) / static_cast<double>(event.Adc[i]));
                         }
 
-                        if (event.Ch[i] < 4) {
-                            H.ESumPart[event.Ch[i]]->Fill(event.Adc[i] + event.Adc[j], event.Adc[i]);
+                        if (ch < 4) {
+                            H.ESumPart[ch]->Fill(event.Adc[i] + event.Adc[j], event.Adc[i]);
                         }
 
                         if (event.Adc[i] > 120 && event.Adc[j] > 120) {
@@ -105,22 +167,16 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                     }
                 }
                 if (event.Mod[j] == 1 && j != i) {
-                    H.hRingRing->Fill(event.Ch[i], event.Ch[j]);
+                    H.hRingRing->Fill(ch, event.Ch[j]);
                 }
             }
         }
-        if (event.Mod[i] == 2) {
+        if (mod == 2) {
             for (size_t j = 0; j < event.Size(); ++j) {
                 if (event.Mod[j] == 2 && i != j) {
-                    H.hSectSect->Fill(event.Ch[i], event.Ch[j]);
+                    H.hSectSect->Fill(ch, event.Ch[j]);
                 }
             }
-        }
-        if (event.Mod[i] == 3) {
-            H.mod3_ch_adc->Fill(event.Ch[i], event.Adc[i]);
-        }
-        if (event.Mod[i] == 4) {
-            H.mod4_ch_adc->Fill(event.Ch[i], event.Adc[i]);
         }
     }
 }

@@ -724,3 +724,7 @@ double JAEASortIO::GetInput(TString InputName,double dflt) const{
     }
     return dflt;
 }
+
+bool JAEASortIO::GetBoolInput(TString InputName,bool dflt) const{
+    return GetInput(InputName, dflt ? 1.0 : 0.0) != 0.0;
+}
