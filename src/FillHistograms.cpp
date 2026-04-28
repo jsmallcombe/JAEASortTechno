@@ -1,6 +1,9 @@
 #include <FillHistograms.h>
 
-#include <cmath>
+#include <IO.h>
+
+#include <Math/VectorUtil.h>
+#include <TMath.h>
 
 DetHitScratch& DetHitScratchBuffer()
 {
@@ -39,8 +42,29 @@ DetHitScratch& BuildDetHitCategories(const BuiltEventView& event)
     return scratch;
 }
 
+const HistogramGateRefs& HistogramGateRefsBuffer()
+{
+    thread_local HistogramGateRefs gateRefs;
+    thread_local bool initialized = false;
+
+    if (!initialized) {
+        if (gIO != nullptr) {
+            gateRefs.invkin = gIO->GetGateConst(0);
+            gateRefs.betatheta = gIO->GetGateConst(1);
+            gateRefs.cdteS3up = gIO->GetInput("CdTeS3Up", 100);
+            gateRefs.cdteS3down = gIO->GetInput("CdTeS3Down", -100);
+            gateRefs.hpgeS3up = gIO->GetInput("HpGeS3Up", 100);
+            gateRefs.hpgeS3down = gIO->GetInput("HpGeS3Down", -100);
+        }
+        initialized = true;
+    }
+    return gateRefs;
+}
+
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 {
+    const HistogramGateRefs& gates = HistogramGateRefsBuffer();
+
     DetHitScratch& detHits = BuildDetHitCategories(event);
     auto& hpge = detHits.hpge;
     auto& cdte = detHits.cdte;
@@ -49,11 +73,66 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
     for(auto& hit : hpge) {
         // H.hpge_ch_adc->Fill(hit.Ch(), hit.Adc());
         H.hpge_chan->Fill(hit.Index(), hit.Energy());
+        H.hpge_energy->Fill(hit.Energy());
+        const XYZVector pos = hit.Pos(true);
+        H.gamma_positions->Fill(pos.Z(), pos.X(), pos.Y());
     }
 
     for(auto& hit : cdte) {
         // H.cdte_ch_adc->Fill(hit.Ch(), hit.Adc());
         H.cdte_chan->Fill(hit.Index(), hit.Energy());
+        H.cdte_energy->Fill(hit.Energy());
+        const XYZVector pos = hit.Pos(true);
+        H.gamma_positions->Fill(pos.Z(), pos.X(), pos.Y());
+    }
+
+    for(auto&& a : cdte) {
+        for(auto&& b : cdte) {
+            if(&a == &b) {
+                continue;
+            }
+            if(&b < &a) {
+                continue;
+            }
+
+            const double dT = a.Time() - b.Time();
+            H.cdte_cdte_dt->Fill(dT);
+            if(TMath::Abs(dT) < 100.0) {
+                H.cdte_cdte_dt_gate->Fill(dT);
+                H.cdte_cdte->Fill(a.Energy(), b.Energy());
+                H.cdte_cdte->Fill(b.Energy(), a.Energy());
+            }
+        }
+    }
+
+    for(auto&& a : hpge) {
+        for(auto&& b : hpge) {
+            if(&a == &b) {
+                continue;
+            }
+            if(&b < &a) {
+                continue;
+            }
+
+            const double dT = a.Time() - b.Time();
+            H.hpge_hpge_dt->Fill(dT);
+            if(TMath::Abs(dT) < 100.0) {
+                H.hpge_hpge_dt_gate->Fill(dT);
+                H.hpge_hpge->Fill(a.Energy(), b.Energy());
+                H.hpge_hpge->Fill(b.Energy(), a.Energy());
+            }
+        }
+    }
+
+    for(auto&& cdteHit : cdte) {
+        for(auto&& hpgeHit : hpge) {
+            const double dT = cdteHit.Time() - hpgeHit.Time();
+            H.cdte_hpge_dt->Fill(dT);
+            if(TMath::Abs(dT) < 100.0) {
+                H.cdte_hpge_dt_gate->Fill(dT);
+                H.cdte_hpge->Fill(cdteHit.Energy(), hpgeHit.Energy());
+            }
+        }
     }
 
     H.s3_raw_ring_mult->Fill(s3.GetRingMultiplicity());
@@ -87,7 +166,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         const XYZVector pos = s3hit.Pos(true);
         H.s3_pixel_theta_energy->Fill(pos.Theta(), s3hit.Energy());
         H.s3_pixel_position_xy->Fill(pos.X(), pos.Y());
-        H.s3_pixel_position_xyz->Fill(pos.X(), pos.Y(), pos.Z());
+        H.s3_pixel_position_xyz->Fill(pos.Z(), pos.X(), pos.Y());
+        XYZVector s3KinPos = pos;
 
         const DetHit* ring = s3hit.RingHit();
         const DetHit* sector = s3hit.SectorHit();
@@ -96,21 +176,61 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             H.s3_pixel_ring_sector_dt->Fill(ring->Time() - sector->Time());
         }
 
+        if(gates.invkin){
+            const double theta = gates.invkin->Eval(pos.Theta());
+            const double phi = pos.Phi() + TMath::Pi();
+            s3KinPos = ROOT::Math::Polar3DVector(1.0, theta, phi);
+        }
+
         for(auto& hit : hpge) {
             const double dT = hit.Time() - s3hit.Time();
             H.hpge_S3time->Fill(hit.Index(), dT);
-            if(dT > -100.0 && dT < 100.0) {
+            if(dT > gates.hpgeS3down && dT < gates.hpgeS3up) {
                 H.hpge_S3time_gate->Fill(hit.Index(), dT);
                 H.hpge_S3->Fill(hit.Index(), hit.Energy());
+                H.hpge_energy_S3->Fill(hit.Energy());
+                const UShort_t index = hit.Index();
+                if(index < 6) {
+                    const XYZVector gammaPos = hit.Pos(true);
+                    const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
+                    H.hpge_kinematics->Fill(openingAngle, hit.Energy());
+                    H.HPGeKinematics[index]->Fill(openingAngle, hit.Energy());
+                }
             }
         }
 
         for(auto& hit : cdte) {
             const double dT = hit.Time() - s3hit.Time();
             H.cdte_S3time->Fill(hit.Index(), dT);
-            if(dT > -100.0 && dT < 100.0) {
+            if(dT > gates.cdteS3down && dT < gates.cdteS3up) {
                 H.cdte_S3time_gate->Fill(hit.Index(), dT);
                 H.cdte_S3->Fill(hit.Index(), hit.Energy());
+                H.cdte_energy_S3->Fill(hit.Energy());
+                const UShort_t index = hit.Index();
+                if(index < 16) {
+                    const XYZVector gammaPos = hit.Pos(true);
+                    const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
+                    H.cdte_kinematics->Fill(openingAngle, hit.Energy());
+                    H.CdTeKinematics[index]->Fill(openingAngle, hit.Energy());
+                }
+            }
+        }
+
+        for(auto&& cdteHit : cdte) {
+            const double cdteS3dT = cdteHit.Time() - s3hit.Time();
+            if(cdteS3dT <= gates.cdteS3down || cdteS3dT >= gates.cdteS3up) {
+                continue;
+            }
+
+            for(auto&& hpgeHit : hpge) {
+                const double hpgeS3dT = hpgeHit.Time() - s3hit.Time();
+                if(hpgeS3dT <= gates.hpgeS3down || hpgeS3dT >= gates.hpgeS3up) {
+                    continue;
+                }
+
+                if(TMath::Abs(cdteHit.Time() - hpgeHit.Time()) < 100.0) {
+                    H.cdte_hpge_S3->Fill(cdteHit.Energy(), hpgeHit.Energy());
+                }
             }
         }
 

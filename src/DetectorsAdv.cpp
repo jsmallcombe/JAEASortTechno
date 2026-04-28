@@ -347,44 +347,77 @@ XYZVector S3Det::GetPosition(int ring, int sector, bool smear)
 }
 
 XYZVector CdTeWorldVectors[16]{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0}
+    {3.5, -25.71, 15.806},
+    {-3.5, -25.71, 15.806},
+    {-3.5, -28.668, 9.462},
+    {3.5, -28.668, 9.462},
+    {3.5, -14.34, 26.537},
+    {-3.5, -14.34, 26.537},
+    {-3.5, -20.074, 22.522},
+    {3.5, -20.074, 22.522},
+    {3.5, 20.074, 22.522},
+    {-3.5, 20.074, 22.522},
+    {-3.5, 14.34, 26.537},
+    {3.5, 14.34, 26.537},
+    {3.5, 28.668, 9.462},
+    {-3.5, 28.668, 9.462},
+    {-3.5, 25.71, 15.806},
+    {3.5, 25.71, 15.806}
+};
+double CdTeZYsmear[4][2]{
+    {0.845,1.813},
+    {1.6385,1.147},
+    {1.6385,-1.147},
+    {0.845,-1.813}
 };
 
-XYZVector CdTeHit::Pos() const
+XYZVector CdTeHit::Pos(bool smear)const {
+    return PosStatic(smear,Index());
+}
+XYZVector CdTeHit::PosStatic(bool smear,u_short i) 
 {
-    if(Index() < 16) {
-        return CdTeWorldVectors[Index()];
+    if(i < 16) {
+        if(!smear)return CdTeWorldVectors[i];
+        double zyr=gThRand().Uniform(-1,1);
+        XYZVector smearvec(gThRand().Uniform(-2,2),CdTeZYsmear[i/4][0]*zyr,CdTeZYsmear[i/4][1]*zyr);
+        return CdTeWorldVectors[i]+smearvec;
     }
     return XYZVector(0.0, 0.0, 0.0);
 }
 
 XYZVector HPGeWorldVectors[6]{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-    {0,0,0}
+    {54.293,78.89,-25.882},
+    {-54.293,78.89,-25.882},
+    {54.293,-78.89,-25.882},
+    {-54.293,-78.89,-25.882},
+    {0,90,0},
+    {0,-90,0}
 };
-XYZVector HPGeHit::Pos() const
+
+XYZVector HPGeSmearBasis[6][2]{
+    {{-0.823768231, 0.566926716, 0.0}, {0.147910787, 0.214920560, 0.965366020}},
+    {{-0.823768231, -0.566926716, 0.0}, {-0.147910787, 0.214920560, 0.965366020}},
+    {{0.823768231, 0.566926716, 0.0}, {0.147910787, -0.214920560, 0.965366020}},
+    {{0.823768231, -0.566926716, 0.0}, {-0.147910787, -0.214920560, 0.965366020}},
+    {{1.0, 0.0, 0.0}, {0.0, 0.0, -1.0}},
+    {{1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}}
+};
+
+XYZVector HPGeHit::Pos(bool smear)const{
+    return PosStatic(smear,Index());
+}
+XYZVector HPGeHit::PosStatic(bool smear,u_short i) 
 {
-    if(Index() < 6) {
-        return HPGeWorldVectors[Index()];
+    if(i < 6) {
+        if(!smear)return HPGeWorldVectors[i];
+
+        const double phi = gThRand().Uniform(0.0, 2.0 * kPi);
+        const double length = std::sqrt(gThRand().Uniform(0.0, 40.0 * 40.0));
+        const XYZVector smearvec =
+            (std::cos(phi) * length) * HPGeSmearBasis[i][0] +
+            (std::sin(phi) * length) * HPGeSmearBasis[i][1];
+
+        return HPGeWorldVectors[i] + smearvec;
     }
     return XYZVector(0.0, 0.0, 0.0);
 }

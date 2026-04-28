@@ -6,6 +6,8 @@
 #include <Detectors.h>
 #include <DetectorsAdv.h>
 
+class TGraph;
+
 struct DetHitScratch {
     std::vector<HPGeHit> hpge;
     std::vector<CdTeHit> cdte;
@@ -21,7 +23,16 @@ struct DetHitScratch {
     }
 };
 
+struct HistogramGateRefs {
+    const TGraph* invkin=nullptr;
+    const TGraph* betatheta=nullptr;
+    double cdteS3up=100, cdteS3down=-100;
+    double hpgeS3up=100, hpgeS3down=-100;
+};
+
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event);
+
+const HistogramGateRefs& HistogramGateRefsBuffer();
 
 DetHitScratch& DetHitScratchBuffer();
 

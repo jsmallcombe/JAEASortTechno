@@ -16,7 +16,8 @@ public:
     CdTeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan) {}
     virtual ~CdTeHit() = default;
 
-    XYZVector Pos() const;
+    XYZVector Pos(bool=false) const;
+    static XYZVector PosStatic(bool=false,u_short=0);
 };
 
 class HPGeHit : public DetHit {
@@ -25,7 +26,8 @@ public:
     HPGeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan) {}
     virtual ~HPGeHit() = default;
 
-    XYZVector Pos() const;
+    XYZVector Pos(bool=false) const;
+    static XYZVector PosStatic(bool=false,u_short=0);
 };
 
 class S3Hit {

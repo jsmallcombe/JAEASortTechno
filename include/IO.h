@@ -14,7 +14,7 @@
 #include <TSystem.h>
 #include <TString.h>
 #include <TKey.h>
-#include <TCutG.h>
+#include <TGraph.h>
 #include <filesystem>
 #include <ostream>
 #include <Digitisers.h>
@@ -53,7 +53,7 @@ class JAEASortIO{
     TString TreeOutputPath;
     TString HistogramOutFilename;
     
-    vector<TCutG*> CutGates;
+    vector<TGraph*> CutGates;
     vector<UShort_t> GateID;
 
     bool WriteEventTree = false;
@@ -71,6 +71,8 @@ class JAEASortIO{
     bool TestInput(TString InputName) const;
     double GetInput(TString InputName,double=0) const;
     bool GetBoolInput(TString InputName,bool=false) const;
+    std::vector<const TGraph*> ResolveGateGraphs() const;
+    const TGraph* GetGateConst(u_short i=0) const;
 	
     TChain* DataTree(TString TreeName);
     

@@ -51,16 +51,33 @@ using ROOT::TThreadedObject;
     X(TH1F, s3_pixel_ring_sector_dt, "s3_pixels", "S3 built pixel ring-sector time difference;Ring - sector time", 201, -1005, 1005) \
     X(TH2F, s3_pixel_theta_energy, "s3_pixels", "S3 built pixel theta vs energy;Theta [rad];Energy", 180, 0, 3.14159265358979323846, 1024, 0, 8192) \
     X(TH2F, s3_pixel_position_xy, "s3_pixels", "S3 built pixel position;X;Y", 200, -50, 50, 200, -50, 50) \
-    X(TH3F, s3_pixel_position_xyz, "s3_pixels", "S3 built pixel position;X;Y;Z", 120, -60, 60, 120, -60, 60, 120, -60, 60) \
+    X(TH3F, s3_pixel_position_xyz, "s3_pixels", "S3 built pixel position;Z;X;Y", 120, -60, 60, 120, -60, 60, 120, -60, 60) \
     X(TH2D, sector_ring_energy_double, "correlations", "Sector E vs Ring E", 512, 0, 8192, 512, 0, 8192) \
     X(TH2F, cdte_chan, "gammas", "CdTe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH1F, cdte_energy, "gammas", "CdTe summed energy;Energy [keV]", 1024, 0, 8192) \
+    X(TH1F, cdte_energy_S3, "gammas", "CdTe summed energy (S3 gated);Energy [keV]", 1024, 0, 8192) \
     X(TH2F, cdte_S3time, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3time_gate, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH2F, cdte_kinematics, "gammas/kinematics", "CdTe opening angle vs energy;Opening angle [deg];Energy [keV]", 180, 0, 180, 1024, 0, 8192) \
+    X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 160, -40, 40, 160, -40, 40, 160, -40, 40) \
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 1024, 0, 8192) \
+    X(TH1F, hpge_energy_S3, "gammas", "HPGe summed energy (S3 gated);Energy [keV]", 1024, 0, 8192) \
     X(TH2F, hpge_S3time, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, hpge_S3time_gate, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
-    X(TH2F, hpge_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) 
+    X(TH2F, hpge_kinematics, "gammas/kinematics", "HPGe opening angle vs energy;Opening angle [deg];Energy [keV]", 180, 0, 180, 1024, 0, 8192) \
+    X(TH2F, hpge_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH2F, cdte_cdte, "gammagamma", "CdTe-CdTe energy;CdTe energy [keV];CdTe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
+    X(TH2F, hpge_hpge, "gammagamma", "HPGe-HPGe energy;HPGe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
+    X(TH2F, cdte_hpge, "gammagamma", "CdTe-HPGe energy;CdTe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
+    X(TH2F, cdte_hpge_S3, "gammagamma", "CdTe-HPGe energy (S3 gated);CdTe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
+    X(TH1F, cdte_cdte_dt, "gammagamma", "CdTe-CdTe time difference;#Deltat", 400, -2000, 2000) \
+    X(TH1F, cdte_cdte_dt_gate, "gammagamma", "CdTe-CdTe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) \
+    X(TH1F, hpge_hpge_dt, "gammagamma", "HPGe-HPGe time difference;#Deltat", 400, -2000, 2000) \
+    X(TH1F, hpge_hpge_dt_gate, "gammagamma", "HPGe-HPGe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) \
+    X(TH1F, cdte_hpge_dt, "gammagamma", "CdTe-HPGe time difference;#Deltat", 400, -2000, 2000) \
+    X(TH1F, cdte_hpge_dt_gate, "gammagamma", "CdTe-HPGe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) 
 
 struct HistogramRefs {
     #define JAEA_DECLARE_REF(Type, Name, Directory, ...) Type* Name;
@@ -69,6 +86,8 @@ struct HistogramRefs {
 
     TH2F* ESumPart[4];
     TH2F* ModulesRaw[4];
+    TH2F* CdTeKinematics[16];
+    TH2F* HPGeKinematics[6];
 };
 
 
@@ -80,6 +99,8 @@ public:
 
     std::unique_ptr<TThreadedObject<TH2F>> ESumPart[4];
     std::unique_ptr<TThreadedObject<TH2F>> ModulesRaw[4];
+    std::unique_ptr<TThreadedObject<TH2F>> CdTeKinematics[16];
+    std::unique_ptr<TThreadedObject<TH2F>> HPGeKinematics[6];
 
     ThreadedHistogramSet()
     {
@@ -95,6 +116,22 @@ public:
             ModulesRaw[i].reset(new TThreadedObject<TH2F>(Form("Module%d_ADC", i),Form("Module %d channel vs ADC", i),32, 0, 32, 1024, 0, 8192));
             Register(*ModulesRaw[i], "modules");
         }
+
+        for (int i = 0; i < 16; ++i) {
+            CdTeKinematics[i].reset(new TThreadedObject<TH2F>(
+                Form("CdTe_kinematics_%d", i),
+                Form("CdTe %d opening angle vs energy;Opening angle [deg];Energy [keV]", i),
+                180, 0, 180, 1024, 0, 8192));
+            Register(*CdTeKinematics[i], "gammas/kinematics");
+        }
+
+        for (int i = 0; i < 6; ++i) {
+            HPGeKinematics[i].reset(new TThreadedObject<TH2F>(
+                Form("HPGe_kinematics_%d", i),
+                Form("HPGe %d opening angle vs energy;Opening angle [deg];Energy [keV]", i),
+                180, 0, 180, 1024, 0, 8192));
+            Register(*HPGeKinematics[i], "gammas/kinematics");
+        }
     }
 
     HistogramRefs ResolveHistogramRefs()
@@ -108,6 +145,12 @@ public:
         for (int i = 0; i < 4; ++i) {
             refs.ESumPart[i] = ESumPart[i]->Get().get();
             refs.ModulesRaw[i] = ModulesRaw[i]->Get().get();
+        }
+        for (int i = 0; i < 16; ++i) {
+            refs.CdTeKinematics[i] = CdTeKinematics[i]->Get().get();
+        }
+        for (int i = 0; i < 6; ++i) {
+            refs.HPGeKinematics[i] = HPGeKinematics[i]->Get().get();
         }
 
         return refs;
@@ -145,7 +188,8 @@ public:
             if (baseDirectory && dirlist[i].Length() > 0) {
                 TDirectory* subdir = baseDirectory->GetDirectory(dirlist[i]);
                 if (!subdir) {
-                    subdir = baseDirectory->mkdir(dirlist[i]);
+                    baseDirectory->mkdir(dirlist[i]);
+                    subdir = baseDirectory->GetDirectory(dirlist[i]);
                 }
                 subdir->cd();
             } else if (baseDirectory) {

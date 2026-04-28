@@ -1,4 +1,6 @@
 #include <IO.h>
+
+#include <TClass.h>
 #include <Detectors.h>
 
 #include <algorithm>
@@ -174,12 +176,24 @@ std::vector<TString> ResolveRootInputSpec(const TString& inputSpec)
     return files;
 }
 
-void CloneCutGates(const std::vector<TCutG*>& source, std::vector<TCutG*>& target)
+void CloneCutGates(const std::vector<TGraph*>& source, std::vector<TGraph*>& target)
 {
     target.clear();
     target.reserve(source.size());
-    for (TCutG* gate : source) {
-        target.push_back(gate ? static_cast<TCutG*>(gate->Clone()) : nullptr);
+    for (TGraph* gate : source) {
+        if (gate == nullptr) {
+            target.push_back(nullptr);
+            continue;
+        }
+
+        TObject* clone = gate->Clone();
+        TGraph* clonedGraph = dynamic_cast<TGraph*>(clone);
+        if (clonedGraph != nullptr) {
+            target.push_back(clonedGraph);
+        } else {
+            delete clone;
+            target.push_back(nullptr);
+        }
     }
 }
 
@@ -584,7 +598,7 @@ void JAEASortIO::ProcessOption(TString str){
             *this>>APV8032::ModuleZeroIndex;
         }else if(str.EqualTo("-apv8016a")){
             *this>>APV8016A::ModuleZeroIndex;
-        }else if(str.EqualTo("-id")){// Load a particle ID gate, next argument file containing name
+        }else if(str.EqualTo("-id") || str.EqualTo("-gr")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name
                 
@@ -600,16 +614,27 @@ void JAEASortIO::ProcessOption(TString str){
                 // Iterate over the keys in the file
                 TIter nextKey(file->GetListOfKeys());
                 TKey *key;
+                bool loadedGraph = false;
                 while ((key = (TKey*)nextKey())) {
-                    // Check if the class name matches "TCutG"
-                    if (std::string(key->GetClassName()) == "TCutG") {
-                        TCutG *cutG = (TCutG*)key->ReadObj();
-                        if (cutG) {
+                    TClass* keyClass = TClass::GetClass(key->GetClassName());
+                    if (keyClass != nullptr && keyClass->InheritsFrom(TGraph::Class())) {
+                        TObject* object = key->ReadObj();
+                        TGraph* graph = dynamic_cast<TGraph*>(object);
+                        if (graph) {
                             gROOT->cd();
-                            CutGates.push_back((TCutG*)cutG->Clone(fileName));
-                            std::cout<< "Found a TCutG object: " << cutG->GetName() << std::endl;
+                            TObject* clone = graph->Clone(fileName);
+                            TGraph* clonedGraph = dynamic_cast<TGraph*>(clone);
+                            if (clonedGraph != nullptr) {
+                                CutGates.push_back(clonedGraph);
+                                std::cout<< "Found a TGraph object: " << graph->GetName()
+                                         << " (" << graph->ClassName() << ")" << std::endl;
+                                loadedGraph = true;
+                            } else {
+                                delete clone;
+                            }
                         }
-                        break; // Exit the loop after finding the first TCutG
+                        delete object;
+                        break; // Exit the loop after finding the first TGraph-derived object
                     }
                 }
 
@@ -619,7 +644,9 @@ void JAEASortIO::ProcessOption(TString str){
                 
                 UShort_t GateTypeID;
                 *this>>GateTypeID;
-                GateID.push_back(GateTypeID);
+                if (loadedGraph) {
+                    GateID.push_back(GateTypeID);
+                }
             }
                    
         }else{
@@ -633,8 +660,27 @@ void JAEASortIO::ProcessOption(TString str){
             std::cout<< str<<" : " << inputdata << std::endl;
         }
 }
-    
-    
+
+std::vector<const TGraph*> JAEASortIO::ResolveGateGraphs() const
+{
+    std::vector<const TGraph*> graphs;
+    graphs.reserve(CutGates.size());
+    for (const TGraph* graph : CutGates) {
+        graphs.push_back(graph);
+    }
+    return graphs;
+}
+const TGraph* JAEASortIO::GetGateConst(u_short i) const
+{
+    for(u_short j=0;j<CutGates.size();j++){
+        if(GateID[j]==i){
+            return CutGates[j];
+        }
+    }
+
+    return nullptr;
+}
+
 
 void JAEASortIO::Rewind(){
 	infostream.str("");
