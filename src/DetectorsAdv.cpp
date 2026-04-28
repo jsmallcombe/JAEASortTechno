@@ -26,13 +26,29 @@ double S3Det::fFrontBackTime = 30.0;
 double S3Det::fFrontBackEnergy = 0.95;
 double S3Det::fFrontBackOffset = 150.0;
 
-XYZVector S3Hit::Pos(bool smear) const
+XYZVector DetPos::Pos(bool smear) const
+{
+    if(!fPosSet) {
+        BuildPos();
+        fPosSet = true;
+    }
+    return smear ? fBlurPos : fPos;
+}
+
+void DetPos::ResetPos() const
+{
+    fPosSet = false;
+    fPos = XYZVector(0.0, 0.0, 0.0);
+    fBlurPos = XYZVector(0.0, 0.0, 0.0);
+}
+
+void S3Hit::BuildPos() const
 {
     if(fRingHit == nullptr || fSectorHit == nullptr) {
-        return XYZVector(0.0, 0.0, 0.0);
+        return;
     }
 
-    return S3Det::GetPosition(static_cast<int>(Ring()), static_cast<int>(Sector()), smear);
+    fBlurPos = S3Det::GetPosition(static_cast<int>(Ring()), static_cast<int>(Sector()), true, &fPos);
 }
 
 void S3Det::Clear()
@@ -318,7 +334,7 @@ void S3Det::BuildHits()
     fPixelsBuilt = true;
 }
 
-XYZVector S3Det::GetPosition(int ring, int sector, bool smear)
+XYZVector S3Det::GetPosition(int ring, int sector, bool smear, XYZVector* pos)
 {
     // S3 ring and sector indices are treated as 0-based here: ring 0 is the inner ring,
     // and sector 0 starts at phi=0 before the fixed connector/setup offsets.
@@ -333,15 +349,17 @@ XYZVector S3Det::GetPosition(int ring, int sector, bool smear)
     }
     phi += fOffsetPhiSet;
 
-    if(smear) {
-        const double sep = ringWidth * 0.025;
-        const double r1 = radius - 0.5 * ringWidth + sep;
-        const double r2 = radius + 0.5 * ringWidth - sep;
-        radius = std::sqrt(gThRand().Uniform(r1 * r1, r2 * r2));
+    const XYZVector basePos(std::cos(phi) * radius, std::sin(phi) * radius, fTargetDistance);
+    if(pos != nullptr) {*pos = basePos;}
+    if(!smear) return basePos;
+    
+    const double sep = ringWidth * 0.025;
+    const double r1 = radius - 0.5 * ringWidth + sep;
+    const double r2 = radius + 0.5 * ringWidth - sep;
+    radius = std::sqrt(gThRand().Uniform(r1 * r1, r2 * r2));
 
-        const double phiSep = sep / radius;
-        phi = gThRand().Uniform(phi - 0.5 * phiWidth + phiSep, phi + 0.5 * phiWidth - phiSep);
-    }
+    const double phiSep = sep / radius;
+    phi = gThRand().Uniform(phi - 0.5 * phiWidth + phiSep, phi + 0.5 * phiWidth - phiSep);
 
     return XYZVector(std::cos(phi) * radius, std::sin(phi) * radius, fTargetDistance);
 }
@@ -371,12 +389,16 @@ double CdTeZYsmear[4][2]{
     {0.845,-1.813}
 };
 
-XYZVector CdTeHit::Pos(bool smear)const {
-    return PosStatic(smear,Index());
+void CdTeHit::BuildPos() const
+{
+    fBlurPos = PosStatic(true, Index(), &fPos);
 }
-XYZVector CdTeHit::PosStatic(bool smear,u_short i) 
+XYZVector CdTeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
 {
     if(i < 16) {
+        if(pos != nullptr) {
+            *pos = CdTeWorldVectors[i];
+        }
         if(!smear)return CdTeWorldVectors[i];
         double zyr=gThRand().Uniform(-1,1);
         XYZVector smearvec(gThRand().Uniform(-2,2),CdTeZYsmear[i/4][0]*zyr,CdTeZYsmear[i/4][1]*zyr);
@@ -403,12 +425,14 @@ XYZVector HPGeSmearBasis[6][2]{
     {{1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}}
 };
 
-XYZVector HPGeHit::Pos(bool smear)const{
-    return PosStatic(smear,Index());
+void HPGeHit::BuildPos() const
+{
+    fBlurPos = PosStatic(true, Index(), &fPos);
 }
-XYZVector HPGeHit::PosStatic(bool smear,u_short i) 
+XYZVector HPGeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
 {
     if(i < 6) {
+        if(pos != nullptr) {*pos = HPGeWorldVectors[i];}
         if(!smear)return HPGeWorldVectors[i];
 
         const double phi = gThRand().Uniform(0.0, 2.0 * kPi);

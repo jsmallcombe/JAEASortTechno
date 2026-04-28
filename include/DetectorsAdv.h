@@ -10,27 +10,61 @@
 
 using XYZVector = ROOT::Math::XYZVector;
 
-class CdTeHit : public DetHit {
+class DetPos {
+protected:
+    mutable bool fPosSet{false};
+    mutable XYZVector fPos{0.0, 0.0, 0.0};
+    mutable XYZVector fBlurPos{0.0, 0.0, 0.0};
+
+    virtual void BuildPos() const = 0;
+
+public:
+    DetPos() = default;
+    virtual ~DetPos() = default;
+
+    DetPos(const DetPos&) { ResetPos(); }
+    DetPos& operator=(const DetPos&)
+    {
+        ResetPos();
+        return *this;
+    }
+    DetPos(DetPos&&) noexcept { ResetPos(); }
+    DetPos& operator=(DetPos&&) noexcept
+    {
+        ResetPos();
+        return *this;
+    }
+
+    void ResetPos() const;
+    XYZVector Pos(bool smear = false) const;
+    XYZVector GetPos(bool smear = false) const { return Pos(smear); };
+};
+
+class CdTeHit : public DetHit, public DetPos {
 public:
     CdTeHit() = default;
-    CdTeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan) {}
+    CdTeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan), DetPos() {}
     virtual ~CdTeHit() = default;
 
-    XYZVector Pos(bool=false) const;
-    static XYZVector PosStatic(bool=false,u_short=0);
+    static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
+
+protected:
+    void BuildPos() const override;
 };
 
-class HPGeHit : public DetHit {
+class HPGeHit : public DetHit, public DetPos {
 public:
     HPGeHit() = default;
-    HPGeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan) {}
+    HPGeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan), DetPos() {}
     virtual ~HPGeHit() = default;
 
-    XYZVector Pos(bool=false) const;
-    static XYZVector PosStatic(bool=false,u_short=0);
+    static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
+
+protected:
+    void BuildPos() const override;
 };
 
-class S3Hit {
+class S3Hit : public DetPos {
 private:
     const DetHit* fRingHit{nullptr};
     const DetHit* fSectorHit{nullptr};
@@ -54,7 +88,8 @@ public:
     Double_t Energy() const { return fPrimary != nullptr ? fPrimary->Energy() : 0.0; }
     Double_t Time() const { return fPrimary != nullptr ? fPrimary->Time() : 0.0; }
 
-    XYZVector Pos(bool smear = false) const;
+protected:
+    void BuildPos() const override;
 };
 
 class S3Det {
@@ -104,7 +139,7 @@ public:
     static double fFrontBackEnergy;
     static double fFrontBackOffset;
 
-    static XYZVector GetPosition(int ring, int sector, bool smear = false);
+    static XYZVector GetPosition(int ring, int sector, bool smear = false, XYZVector* pos = nullptr);
 
 private:
     void BuildHits();
