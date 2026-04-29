@@ -43,6 +43,19 @@ const ChannelCalibration& DetHit::FindCalibration(UShort_t Mod, UShort_t Chan)
     return ChanCal[Mod][Chan];
 }
 
+DetHit::DetHit(Double_t tTS,UShort_t tC, UShort_t tMod, UShort_t tChan)
+    : fTimeStamp(tTS), fCharge(tC), fModule(tMod), fChannel(tChan)
+{
+    const ChannelCalibration& cal = FindCalibration(fModule, fChannel);
+    fType = cal.DetectorType;
+    fIndex = cal.Index;
+    fTOff = cal.TOff;
+    fTime = fTimeStamp - fTOff;
+
+    fEnergy = fCharge + gThRand().Uniform();
+    fEnergy = cal.p0 + fEnergy * cal.p1 + fEnergy * fEnergy * cal.p2;
+}
+
 void DetHit::SetCalibrationParam(UShort_t Mod,UShort_t Chan,double Pol0, double Pol1,double Pol2){
     ExpandCal(Mod,Chan); 
     ChanCal[Mod][Chan].p0=Pol0;
@@ -119,23 +132,6 @@ void DetHit::SetTOff(UShort_t Mod,UShort_t Chan,Double_t toff){
     ExpandCal(Mod,Chan); 
     ChanCal[Mod][Chan].TOff=toff; 
 }
-
-
-////////////////////////////
-
-
-double DetHit::Energy() const{
-    
-    if(fEnergySet)return fEnergy;
-    
-    array<double, 3> Cal=GetCal(fModule,fChannel);
-    
-    fEnergy=(fCharge+gThRand().Uniform());
-    fEnergy=Cal[0]+fEnergy*Cal[1]+fEnergy*fEnergy*Cal[2];
-    fEnergySet=true;
-    return fEnergy;
-}
-
 
 ////////////////////////////
 

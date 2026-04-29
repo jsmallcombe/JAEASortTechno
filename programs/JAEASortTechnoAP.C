@@ -2,6 +2,7 @@
 #include <ThreadedSort.h>
 #include <TStopwatch.h>
 #include <iostream>
+#include <HistogramRuntime.h>
 #include <IOHelpers.h>
 
 int main(int argc, char** argv)
@@ -28,6 +29,12 @@ int main(int argc, char** argv)
     int BufferSize = gIO->GetInput("BuildBuffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
     Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
+    const bool BasicHistograms = gIO->GetBoolInput("BasicHistograms", false);
+    const bool HistogramTimers = gIO->GetBoolInput("HistogramTimers", false);
+
+    gHistogramRuntimeOptions.basicHistogramsOnly = BasicHistograms;
+    gHistogramRuntimeOptions.enableHistogramTimers = HistogramTimers;
+    ResetHistogramRuntimeTimers();
 
     cout<<endl<<"Input summary:"<<endl;
     if (gIO->TestInput("Window")) {
@@ -42,8 +49,14 @@ int main(int argc, char** argv)
     if (gIO->TestInput("Tolerance")) {
         std::cout << "Timestamp tolerance overridden: " << TsTolerance << std::endl;
     }
-    if (gIO->TestInput("HistChunkEvents")) {
+    if (gIO->TestInput("HistChunks")) {
         std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;
+    }
+    if (BasicHistograms) {
+        std::cout << "Basic histogram mode enabled: detector histograms will not be created or filled" << std::endl;
+    }
+    if (HistogramTimers) {
+        std::cout << "Histogram timers enabled" << std::endl;
     }
 
     int status = 0;
@@ -81,6 +94,10 @@ int main(int argc, char** argv)
         std::cout << Form("\n RealTime = %d seconds, CpuTime = %d seconds\n\n",
                           static_cast<Int_t>(timer.RealTime()),
                           static_cast<Int_t>(timer.CpuTime()));
+        if (HistogramTimers) {
+            PrintHistogramRuntimeTimers(std::cout);
+            std::cout << std::endl;
+        }
     }
 
     if (EventData != nullptr) delete EventData;

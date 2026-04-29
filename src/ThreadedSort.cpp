@@ -139,7 +139,7 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
     // than individual events so the producer pays one push per chunk and the
     // worker pool gets coarse-grained work items.
     ThreadSafeQueue<BuiltEventChunkBuffer*> chunkQueue(chunkQueueCapacity);
-    ThreadedHistogramSet histograms;
+    ThreadedHistogramCollection histograms;
     std::thread monitorThread(BuildMonitorThread, builtEventBudget, bufferTarget, refillTarget, std::ref(doneFlag));
 
     std::thread histogramConsumer([&chunkQueue, &histograms, histWorkers]() {
@@ -252,7 +252,7 @@ int ThreadedSort(TChain* eventData,
         return 3;
     }
 
-    ThreadedHistogramSet histograms;
+    ThreadedHistogramCollection histograms;
     FillHistogramsFromEventTree(eventData, histograms, histWorkers);
 
     if (!WriteHistogramFile(histograms, histogramOutfilename, true)) {

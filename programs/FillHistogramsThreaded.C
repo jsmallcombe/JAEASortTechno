@@ -47,7 +47,8 @@ int main(int argc, char** argv)
             throw std::runtime_error("Could not create output file");
         }
 
-        ThreadedHistogramSet histograms;
+        gHistogramRuntimeOptions.basicHistogramsOnly = true;    
+        ThreadedHistogramCollection histograms;
         FillHistogramsFromEventTree(intree, histograms, nworkers);
 
         outfile->cd();

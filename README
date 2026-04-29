@@ -61,3 +61,7 @@ JAEASortIO input syntax
       Timestamp ordering tolerance forwarded to the digitiser readers.
     -HistChunks N
       Built-event count per histogram chunk in the direct bin->hist path.
+    -BasicHistograms 0|1
+      When set non-zero, only the detector-free basic histograms are created and filled.
+    -HistogramTimers 0|1
+      When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.

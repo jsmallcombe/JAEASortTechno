@@ -17,12 +17,12 @@ namespace {
 
 // Sequential inner loop for one completed chunk. Each worker resolves its
 // own histogram references once, then reuses them while walking the chunk.
-size_t FillHistogramsFromBuiltEventChunkSequential(BuiltEventChunkBuffer& chunk, HistogramRefs& refs)
+size_t FillHistogramsFromBuiltEventChunkSequential(BuiltEventChunkBuffer& chunk, HistogramCollectionRefs& refs)
 {
     size_t processed = 0;
 
     for (const BuiltEvent& event : chunk.Events) {
-        FillHistograms(refs, MakeBuiltEventView(event));
+        FillSelectedHistograms(refs, MakeBuiltEventView(event));
         ++processed;
     }
 
@@ -130,7 +130,7 @@ bool ShouldShowEventTreeMonitor(TTree* tree, Long64_t totalEntries)
 }
 
 void FillHistogramsFromEventTree(TTree* tree,
-                                 ThreadedHistogramSet& histograms,
+                                 ThreadedHistogramCollection& histograms,
                                  unsigned int nthreads)
 {
     if (!tree) {
@@ -167,13 +167,13 @@ void FillHistogramsFromEventTree(TTree* tree,
         tree->SetBranchAddress("Ch", &ch);
         tree->SetBranchAddress("Adc", &adc);
 
-        HistogramRefs refs = histograms.ResolveHistogramRefs();
+        HistogramCollectionRefs refs = histograms.ResolveHistogramRefs();
         Long64_t localCount = 0;
 
         for (Long64_t entry = 0; entry < nentries; ++entry) {
             tree->GetEntry(entry);
             const BuiltEventView event{*ts, *mod, *ch, *adc};
-            FillHistograms(refs, event);
+            FillSelectedHistograms(refs, event);
             ++localCount;
             if (localCount >= 10000) {
                 FlushProcessedEntries(progress.processed, localCount);
@@ -197,12 +197,12 @@ void FillHistogramsFromEventTree(TTree* tree,
         TTreeReaderValue<std::vector<UShort_t>> mod(reader, "Mod");
         TTreeReaderValue<std::vector<UShort_t>> ch(reader, "Ch");
         TTreeReaderValue<std::vector<UShort_t>> adc(reader, "Adc");
-        HistogramRefs refs = histograms.ResolveHistogramRefs();
+        HistogramCollectionRefs refs = histograms.ResolveHistogramRefs();
         Long64_t localCount = 0;
 
         while (reader.Next()) {
             const BuiltEventView event{*ts, *mod, *ch, *adc};
-            FillHistograms(refs, event);
+            FillSelectedHistograms(refs, event);
             ++localCount;
             if (localCount >= 10000) {
                 FlushProcessedEntries(progress.processed, localCount);
@@ -218,7 +218,7 @@ void FillHistogramsFromEventTree(TTree* tree,
 }
 
 void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffer*>& queue,
-                                            ThreadedHistogramSet& histograms,
+                                            ThreadedHistogramCollection& histograms,
                                             unsigned int nthreads)
 {
     ROOT::EnableThreadSafety();
@@ -239,7 +239,7 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
 
     for (unsigned int i = 0; i < workerCount; ++i) {
         workers.push_back(std::thread([&queue, &histograms]() {
-            HistogramRefs refs = histograms.ResolveHistogramRefs();
+            HistogramCollectionRefs refs = histograms.ResolveHistogramRefs();
             BuiltEventChunkBuffer* chunk = nullptr;
 
             while (true) {
@@ -263,7 +263,7 @@ void FillHistogramsFromBuiltEventChunkQueue(ThreadSafeQueue<BuiltEventChunkBuffe
     }
 }
 
-bool WriteHistogramFile(ThreadedHistogramSet& histograms,
+bool WriteHistogramFile(ThreadedHistogramCollection& histograms,
                         const TString& outfilename,
                         bool overwrite)
 {

@@ -58,41 +58,30 @@ class DetHit{
     UShort_t fModule;
     UShort_t fChannel;
     
-    mutable bool fEnergySet;
-    mutable Double_t fEnergy{0.};    //!<! Energy of the Hit.
+    Double_t fEnergy{0.};
+    Double_t fTime{0.};
+    UShort_t fType{0};
+    UShort_t fIndex{0};
+    Double_t fTOff{0.};
     
     public:
     
-    DetHit(){}; 
-    DetHit(Double_t tTS,UShort_t tC, UShort_t tMod, UShort_t tChan)
-    : fTimeStamp(tTS), fCharge(tC), fModule(tMod), fChannel(tChan), fEnergySet(false), fEnergy(0.0) {};
+    DetHit() = default;
+    DetHit(Double_t tTS,UShort_t tC, UShort_t tMod, UShort_t tChan);
     virtual ~DetHit(){};
     
-    DetHit(const DetHit& other) {
-        *this = other;  // Reuse the logic of the copy assignment operator
-    };
+    DetHit(const DetHit& other) = default;
+    DetHit& operator=(const DetHit& other) = default;
     
-    DetHit& operator=(const DetHit& other) {
-        if (this != &other) {  // self-assignment check
-            fTimeStamp = other.fTimeStamp;
-            fCharge = other.fCharge;
-            fModule = other.fModule;
-            fChannel = other.fChannel;
-            fEnergySet = false; // in case calibration has been updated and DetHit is being read from an old tree
-            fEnergy = 0;
-        }
-        return *this;
-    };
-    
-    Double_t Energy() const;
-    Double_t Time() const {return fTimeStamp-TOff();}
+    Double_t Energy() const {return fEnergy;}
+    Double_t Time() const {return fTime;}
     Double_t TimeRaw() const {return fTimeStamp;}
     UShort_t Mod() const {return fModule;}
     UShort_t Chan() const {return fChannel;}
     UShort_t Charge() const {return fCharge;}
-    UShort_t Type() const {return GetDetType(fModule,fChannel);}
-    UShort_t Index()const {return GetIndex(fModule,fChannel);}
-    Double_t TOff()const {return GetTOff(fModule,fChannel);}
+    UShort_t Type() const {return fType;}
+    UShort_t Index()const {return fIndex;}
+    Double_t TOff()const {return fTOff;}
     
 };
 
