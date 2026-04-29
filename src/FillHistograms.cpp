@@ -212,11 +212,9 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.hpge_S3time_gate->Fill(hit.Index(), dT);
                 H.hpge_S3->Fill(hit.Index(), hit.Energy());
                 H.hpge_energy_S3->Fill(hit.Energy());
-                const UShort_t index = hit.Index();
-                if(index < 6) {
+                if(s3Ring < kS3RingKinematicsCount) {
                     const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
-                    H.hpge_kinematics->Fill(openingAngle, hit.Energy());
-                    H.HPGeKinematics[index]->Fill(openingAngle, hit.Energy());
+                    H.HPGeKinematics[s3Ring]->Fill(openingAngle, hit.Energy());
                 }//s3.hpge.dt.hpgepixel
             }//s3.hpge.dt
         }//s3.hpge
@@ -234,11 +232,9 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.cdte_S3time_gate->Fill(cdteHit.Index(), dT);
                 H.cdte_S3->Fill(cdteHit.Index(), cdteEnergy);
                 H.cdte_energy_S3->Fill(cdteEnergy);
-                const UShort_t index = cdteHit.Index();
-                if(index < 16) {
+                if(s3Ring < kS3RingKinematicsCount) {
                     const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
-                    H.cdte_kinematics->Fill(openingAngle, cdteEnergy);
-                    H.CdTeKinematics[index]->Fill(openingAngle, cdteEnergy);
+                    H.CdTeKinematics[s3Ring]->Fill(openingAngle, cdteEnergy);
                 }//s3.cdte.dt.cdpixel
 
                 for(const HPGeHit* hpgeHit : gatedHpgeHits) {

@@ -38,14 +38,12 @@
     X(TH2F, cdte_S3time, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3time_gate, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
-    X(TH2F, cdte_kinematics, "gammas/kinematics", "CdTe opening angle vs energy;Opening angle [deg];Energy [keV]", 180, 0, 180, 1024, 0, 8192) \
     X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 160, -40, 40, 160, -40, 40, 160, -40, 40) \
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
     X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 1024, 0, 8192) \
     X(TH1F, hpge_energy_S3, "gammas", "HPGe summed energy (S3 gated);Energy [keV]", 1024, 0, 8192) \
     X(TH2F, hpge_S3time, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, hpge_S3time_gate, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
-    X(TH2F, hpge_kinematics, "gammas/kinematics", "HPGe opening angle vs energy;Opening angle [deg];Energy [keV]", 180, 0, 180, 1024, 0, 8192) \
     X(TH2F, hpge_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
     X(TH2F, cdte_cdte, "gammagamma", "CdTe-CdTe energy;CdTe energy [keV];CdTe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
     X(TH2F, hpge_hpge, "gammagamma", "HPGe-HPGe energy;HPGe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
@@ -58,13 +56,15 @@
     X(TH1F, cdte_hpge_dt, "gammagamma", "CdTe-HPGe time difference;#Deltat", 400, -2000, 2000) \
     X(TH1F, cdte_hpge_dt_gate, "gammagamma", "CdTe-HPGe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000)
 
+constexpr int kS3RingKinematicsCount = 24;
+
 struct HistogramRefs {
     #define JAEA_DECLARE_DETECTOR_REF(Type, Name, Directory, ...) Type* Name = nullptr;
         JAEA_THREADED_DETECTOR_HISTOGRAM_LIST(JAEA_DECLARE_DETECTOR_REF)
     #undef JAEA_DECLARE_DETECTOR_REF
 
-    TH2F* CdTeKinematics[16];
-    TH2F* HPGeKinematics[6];
+    TH2F* CdTeKinematics[kS3RingKinematicsCount];
+    TH2F* HPGeKinematics[kS3RingKinematicsCount];
 };
 
 class ThreadedHistogramSet : public ThreadedHistogramList {
@@ -73,8 +73,8 @@ public:
     JAEA_THREADED_DETECTOR_HISTOGRAM_LIST(JAEA_DECLARE_DETECTOR_THREADED_HIST)
     #undef JAEA_DECLARE_DETECTOR_THREADED_HIST
 
-    std::unique_ptr<TThreadedObject<TH2F>> CdTeKinematics[16];
-    std::unique_ptr<TThreadedObject<TH2F>> HPGeKinematics[6];
+    std::unique_ptr<TThreadedObject<TH2F>> CdTeKinematics[kS3RingKinematicsCount];
+    std::unique_ptr<TThreadedObject<TH2F>> HPGeKinematics[kS3RingKinematicsCount];
 
     ThreadedHistogramSet()
     {
@@ -84,18 +84,18 @@ public:
         JAEA_THREADED_DETECTOR_HISTOGRAM_LIST(JAEA_REGISTER_DETECTOR_HIST)
         #undef JAEA_REGISTER_DETECTOR_HIST
 
-        for (int i = 0; i < 16; ++i) {
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             CdTeKinematics[i].reset(new TThreadedObject<TH2F>(
                 Form("CdTe_kinematics_%d", i),
-                Form("CdTe %d opening angle vs energy;Opening angle [deg];Energy [keV]", i),
+                Form("CdTe opening angle vs energy for S3 ring %d;Opening angle [deg];Energy [keV]", i),
                 180, 0, 180, 1024, 0, 8192));
             Register(*CdTeKinematics[i], "gammas/kinematics");
         }
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             HPGeKinematics[i].reset(new TThreadedObject<TH2F>(
                 Form("HPGe_kinematics_%d", i),
-                Form("HPGe %d opening angle vs energy;Opening angle [deg];Energy [keV]", i),
+                Form("HPGe opening angle vs energy for S3 ring %d;Opening angle [deg];Energy [keV]", i),
                 180, 0, 180, 1024, 0, 8192));
             Register(*HPGeKinematics[i], "gammas/kinematics");
         }
@@ -109,10 +109,10 @@ public:
         JAEA_THREADED_DETECTOR_HISTOGRAM_LIST(JAEA_RESOLVE_DETECTOR_REF)
         #undef JAEA_RESOLVE_DETECTOR_REF
 
-        for (int i = 0; i < 16; ++i) {
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             refs.CdTeKinematics[i] = CdTeKinematics[i]->Get().get();
         }
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             refs.HPGeKinematics[i] = HPGeKinematics[i]->Get().get();
         }
 
