@@ -8,8 +8,11 @@
 #include <TH1F.h>
 #include <iostream>
 #include <fstream>
+#include <atomic>
+#include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 
@@ -33,9 +36,17 @@ protected:
     Long64_t disorderCount = 0;
 
     static Long64_t TS_TOLERANCE; // ns
+    static std::atomic<bool> ONLINE_MODE;
+    static std::atomic<bool> ONLINE_RUN_FINISHED;
+
+    bool WaitUntilFileIsReady(const TString& requestedFile, const TString& completionMarkerFile) const;
     
 public:
     static void SetTsTolerance(Long64_t ts){TS_TOLERANCE=ts;}
+    static void SetOnlineMode(bool enabled);
+    static bool IsOnlineMode(){ return ONLINE_MODE.load(); }
+    static void MarkOnlineRunFinished(){ ONLINE_RUN_FINISHED = true; }
+    static bool IsOnlineRunFinished(){ return ONLINE_RUN_FINISHED.load(); }
 
     DigitiserBase(TString runName, int module)
         : run(runName), mod(module) {}
@@ -44,7 +55,7 @@ public:
         if (file.is_open()) file.close();
     }
 
-    virtual TString buildFileName() = 0;
+    virtual TString buildFileName(int index) const = 0;
     virtual bool decode(UShort_t* buf, Event& ev) = 0;
 
     virtual int channels(){ return 1; }
@@ -57,7 +68,16 @@ public:
         if (file.is_open()) file.close();
 
         std::cout<<"opening file for module "<<mod<<std::endl;
-        TString fname = buildFileName();
+        TString fname = buildFileName(fileIndex);
+        if (ONLINE_MODE.load()) {
+            const TString nextFile = buildFileName(fileIndex + 1);
+            if (!WaitUntilFileIsReady(fname, nextFile)) {
+                isOpen = false;
+                isFinished = true;
+                return false;
+            }
+        }
+
         file.open(fname.Data(), std::ios::in | std::ios::binary);
 
         if (!file) {
@@ -137,8 +157,8 @@ public:
         name.Form("%s_%06d.bin", rn.Data(), filei);
         return name;
     }
-    TString buildFileName() override {
-        return buildFileName(run,fileIndex);
+    TString buildFileName(int index) const override {
+        return buildFileName(run,index);
     }
 
     bool decode(UShort_t* Dbuf, Event& ev) override {
@@ -176,8 +196,8 @@ public:
         }
         return name;
     }
-    TString buildFileName() override {
-        return buildFileName(run,fmod,fileIndex);
+    TString buildFileName(int index) const override {
+        return buildFileName(run,fmod,index);
     }
 
     bool decode(UShort_t* Dbuf, Event& ev) override {
@@ -215,8 +235,8 @@ public:
         }
         return name;
     }
-    TString buildFileName() override {
-        return buildFileName(run,fmod,fileIndex);
+    TString buildFileName(int index) const override {
+        return buildFileName(run,fmod,index);
     }
 
     bool decode(UShort_t* Dbuf, Event& ev) override {

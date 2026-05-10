@@ -23,6 +23,12 @@ JAEASortIO input syntax
   overwrite:
     -O / -o
       Enables overwrite mode for event tree and histogram outputs.
+  online bin sorting:
+    -online
+      Waits to open file N until file N+1 exists, so the current file is only
+      read after the writer has moved on.
+      While sorting, type finish, done, end, or stop then press Enter to mark
+      the run complete and release the final next-file checks.
 
 
   calibration file:

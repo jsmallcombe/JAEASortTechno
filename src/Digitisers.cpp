@@ -3,10 +3,37 @@
 #include <algorithm>
 
 Long64_t DigitiserBase::TS_TOLERANCE = 100000; // ns
+std::atomic<bool> DigitiserBase::ONLINE_MODE{false};
+std::atomic<bool> DigitiserBase::ONLINE_RUN_FINISHED{false};
 
 int APV8104::ModuleZeroIndex=-1;
 int APV8032::ModuleZeroIndex=-1;
 int APV8016A::ModuleZeroIndex=-1;
+
+void DigitiserBase::SetOnlineMode(bool enabled)
+{
+    ONLINE_MODE = enabled;
+    ONLINE_RUN_FINISHED = !enabled;
+}
+
+bool DigitiserBase::WaitUntilFileIsReady(const TString& requestedFile,
+                                         const TString& completionMarkerFile) const
+{
+    constexpr auto kPollInterval = std::chrono::seconds(5);
+
+    while (ONLINE_MODE.load() && !ONLINE_RUN_FINISHED.load()) {
+        if (!gSystem->AccessPathName(completionMarkerFile)) {
+            return true;
+        }
+
+        std::cout << "[ONLINE] Waiting for " << completionMarkerFile
+                  << " before opening " << requestedFile
+                  << " for module " << mod << std::endl;
+        std::this_thread::sleep_for(kPollInterval);
+    }
+
+    return true;
+}
 
 DigitiserAdcHistograms::DigitiserAdcHistograms(DigitiserAdcHistograms&& other) noexcept
     : histograms(std::move(other.histograms)),

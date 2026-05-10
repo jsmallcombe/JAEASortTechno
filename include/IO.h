@@ -59,6 +59,7 @@ class JAEASortIO{
     bool WriteEventTree = false;
     bool DoHistSort = false;
     bool Overwrite = false;
+    bool OnlineSort = false;
     bool Validated;
 
 	// string ReturnFind(string compare) const;

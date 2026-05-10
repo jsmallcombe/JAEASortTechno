@@ -2,6 +2,9 @@
 #include <ThreadedSort.h>
 #include <TStopwatch.h>
 #include <iostream>
+#include <algorithm>
+#include <cctype>
+#include <thread>
 #include <HistogramRuntime.h>
 #include <IOHelpers.h>
 
@@ -19,6 +22,7 @@ int main(int argc, char** argv)
     bool WriteTree = gIO->WriteEventTree;
     bool DoHistSort = gIO->DoHistSort;
     bool Overwrite = gIO->Overwrite;
+    const bool OnlineSort = gIO->OnlineSort;
 
 
     ConfigureS3DetFromIO();
@@ -58,11 +62,39 @@ int main(int argc, char** argv)
     if (HistogramTimers) {
         std::cout << "Histogram timers enabled" << std::endl;
     }
+    if (OnlineSort && ReadBin) {
+        std::cout << "Online sort mode enabled" << std::endl;
+        std::cout << "Type finish, done, end, or stop then press Enter when no more .bin files will be written" << std::endl;
+    }
 
     int status = 0;
 
     TStopwatch timer;
     bool ranSort = false;
+
+    DigitiserBase::SetOnlineMode(OnlineSort);
+
+    std::thread onlineConsoleThread;
+    if (OnlineSort && ReadBin) {
+        onlineConsoleThread = std::thread([]() {
+            std::string command;
+            while (!DigitiserBase::IsOnlineRunFinished() && std::getline(std::cin, command)) {
+                std::transform(command.begin(), command.end(), command.begin(),
+                               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+                if (command == "finish" || command == "done" || command == "end" || command == "stop") {
+                    std::cout << "[ONLINE] Final run marker received. End-of-data checks released." << std::endl;
+                    DigitiserBase::MarkOnlineRunFinished();
+                    break;
+                }
+
+                if (!command.empty()) {
+                    std::cout << "[ONLINE] Unrecognised command '" << command
+                              << "'. Use finish, done, end, or stop." << std::endl;
+                }
+            }
+        });
+    }
 
     if (ReadBin) {
         timer.Start();
@@ -86,6 +118,13 @@ int main(int argc, char** argv)
                               gIO->HistogramOutFilename,
                               HistWorkers,
                               Overwrite);
+    }
+
+    if (OnlineSort && ReadBin) {
+        DigitiserBase::MarkOnlineRunFinished();
+        if (onlineConsoleThread.joinable()) {
+            onlineConsoleThread.detach();
+        }
     }
 
     if (ranSort) {
