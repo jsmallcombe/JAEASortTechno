@@ -38,6 +38,10 @@
     X(TH2F, cdte_S3time, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3time_gate, "gammas", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, cdte_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH1F, cdte_doppler, "gammas", "CdTe Doppler-corrected energy;Energy [keV]", 1024, 0, 8192) \
+    X(TH2F, cdte_ring_doppler, "gammas", "S3 ring vs CdTe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 1024, 0, 8192) \
+    X(TH1F, cdte_doppler_beam, "kinematics_beam", "CdTe Doppler-corrected energy (beam);Energy [keV]", 1024, 0, 8192) \
+    X(TH2F, cdte_ring_doppler_beam, "kinematics_beam", "S3 ring vs CdTe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 1024, 0, 8192) \
     X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 160, -40, 40, 160, -40, 40, 160, -40, 40) \
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
     X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 1024, 0, 8192) \
@@ -45,6 +49,10 @@
     X(TH2F, hpge_S3time, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, hpge_S3time_gate, "gammas", "HPGe Channel vs S3-HPGe time;Channel;Time", 16, -0.5, 15.5, 201, -1000.5, 1000.5) \
     X(TH2F, hpge_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1024, 0, 8192) \
+    X(TH1F, hpge_doppler, "gammas", "HPGe Doppler-corrected energy;Energy [keV]", 1024, 0, 8192) \
+    X(TH2F, hpge_ring_doppler, "gammas", "S3 ring vs HPGe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 1024, 0, 8192) \
+    X(TH1F, hpge_doppler_beam, "kinematics_beam", "HPGe Doppler-corrected energy (beam);Energy [keV]", 1024, 0, 8192) \
+    X(TH2F, hpge_ring_doppler_beam, "kinematics_beam", "S3 ring vs HPGe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 1024, 0, 8192) \
     X(TH2F, cdte_cdte, "gammagamma", "CdTe-CdTe energy;CdTe energy [keV];CdTe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
     X(TH2F, hpge_hpge, "gammagamma", "HPGe-HPGe energy;HPGe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
     X(TH2F, cdte_hpge, "gammagamma", "CdTe-HPGe energy;CdTe energy [keV];HPGe energy [keV]", 1024, 0, 8192, 1024, 0, 8192) \
@@ -65,6 +73,8 @@ struct HistogramRefs {
 
     TH2F* CdTeKinematics[kS3RingKinematicsCount];
     TH2F* HPGeKinematics[kS3RingKinematicsCount];
+    TH2F* CdTeKinematicsBeam[kS3RingKinematicsCount];
+    TH2F* HPGeKinematicsBeam[kS3RingKinematicsCount];
 };
 
 class ThreadedHistogramSet : public ThreadedHistogramList {
@@ -75,6 +85,8 @@ public:
 
     std::unique_ptr<TThreadedObject<TH2F>> CdTeKinematics[kS3RingKinematicsCount];
     std::unique_ptr<TThreadedObject<TH2F>> HPGeKinematics[kS3RingKinematicsCount];
+    std::unique_ptr<TThreadedObject<TH2F>> CdTeKinematicsBeam[kS3RingKinematicsCount];
+    std::unique_ptr<TThreadedObject<TH2F>> HPGeKinematicsBeam[kS3RingKinematicsCount];
 
     ThreadedHistogramSet()
     {
@@ -99,6 +111,22 @@ public:
                 180, 0, 180, 1024, 0, 8192));
             Register(*HPGeKinematics[i], "gammas/kinematics");
         }
+
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
+            CdTeKinematicsBeam[i].reset(new TThreadedObject<TH2F>(
+                Form("CdTe_kinematics_beam_%d", i),
+                Form("CdTe opening angle vs energy for S3 ring %d (beam);Opening angle [deg];Energy [keV]", i),
+                180, 0, 180, 1024, 0, 8192));
+            Register(*CdTeKinematicsBeam[i], "kinematics_beam");
+        }
+
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
+            HPGeKinematicsBeam[i].reset(new TThreadedObject<TH2F>(
+                Form("HPGe_kinematics_beam_%d", i),
+                Form("HPGe opening angle vs energy for S3 ring %d (beam);Opening angle [deg];Energy [keV]", i),
+                180, 0, 180, 1024, 0, 8192));
+            Register(*HPGeKinematicsBeam[i], "kinematics_beam");
+        }
     }
 
     HistogramRefs ResolveHistogramRefs()
@@ -114,6 +142,12 @@ public:
         }
         for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             refs.HPGeKinematics[i] = HPGeKinematics[i]->Get().get();
+        }
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
+            refs.CdTeKinematicsBeam[i] = CdTeKinematicsBeam[i]->Get().get();
+        }
+        for (int i = 0; i < kS3RingKinematicsCount; ++i) {
+            refs.HPGeKinematicsBeam[i] = HPGeKinematicsBeam[i]->Get().get();
         }
 
         return refs;

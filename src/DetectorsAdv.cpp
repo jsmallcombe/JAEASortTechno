@@ -7,6 +7,16 @@
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;
+
+double DopplerCorrectEnergy(double energyKeV, double angleRad, double beta)
+{
+    if (beta <= 0.0 || beta >= 1.0) {
+        return energyKeV;
+    }
+
+    const double gamma = 1.0 / std::sqrt(1.0 - beta * beta);
+    return energyKeV * gamma * (1.0 - beta * std::cos(angleRad));
+}
 }
 
 bool S3Det::fPreferSector = false;
@@ -393,6 +403,12 @@ void CdTeHit::BuildPos() const
 {
     fBlurPos = PosStatic(true, Index(), &fPos);
 }
+
+Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
+{
+    return DopplerCorrectEnergy(Energy(), angleRad, beta);
+}
+
 XYZVector CdTeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
 {
     if(i < 16) {
@@ -429,6 +445,12 @@ void HPGeHit::BuildPos() const
 {
     fBlurPos = PosStatic(true, Index(), &fPos);
 }
+
+Double_t HPGeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
+{
+    return DopplerCorrectEnergy(Energy(), angleRad, beta);
+}
+
 XYZVector HPGeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
 {
     if(i < 6) {

@@ -53,7 +53,8 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
     if (!initialized) {
         if (gIO != nullptr) {
             gateRefs.invkin = gIO->GetGateConst(0);
-            gateRefs.betatheta = gIO->GetGateConst(1);
+            gateRefs.beta = gIO->GetGateConst(1);
+            gateRefs.betabeam = gIO->GetGateConst(2);
             gateRefs.cdteS3up = gIO->GetInput("CdTeS3Up", 100);
             gateRefs.cdteS3down = gIO->GetInput("CdTeS3Down", -100);
             gateRefs.hpgeS3up = gIO->GetInput("HpGeS3Up", 100);
@@ -184,6 +185,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         H.s3_pixel_position_xy->Fill(pos.X(), pos.Y());
         H.s3_pixel_position_xyz->Fill(pos.Z(), pos.X(), pos.Y());
         XYZVector s3KinPos = pos;
+        const double beta = gates.beta != nullptr ? gates.beta->Eval(pos.Theta()) : 0.0;
+        const double betaBeam = gates.betabeam != nullptr ? gates.betabeam->Eval(pos.Theta()) : 0.0;
 
         const DetHit* ring = s3hit.RingHit();
         const DetHit* sector = s3hit.SectorHit();
@@ -212,9 +215,17 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.hpge_S3time_gate->Fill(hit.Index(), dT);
                 H.hpge_S3->Fill(hit.Index(), hit.Energy());
                 H.hpge_energy_S3->Fill(hit.Energy());
+                const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos);
+                const double dopplerEnergy = hit.DopplerCorrectedEnergy(openingAngle, beta);
+                const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
+                const double dopplerEnergyBeam = hit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
+                H.hpge_doppler->Fill(dopplerEnergy);
+                H.hpge_ring_doppler->Fill(s3Ring, dopplerEnergy);
+                H.hpge_doppler_beam->Fill(dopplerEnergyBeam);
+                H.hpge_ring_doppler_beam->Fill(s3Ring, dopplerEnergyBeam);
                 if(s3Ring < kS3RingKinematicsCount) {
-                    const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
-                    H.HPGeKinematics[s3Ring]->Fill(openingAngle, hit.Energy());
+                    H.HPGeKinematics[s3Ring]->Fill(openingAngle * TMath::RadToDeg(), hit.Energy());
+                    H.HPGeKinematicsBeam[s3Ring]->Fill(openingAngleBeam * TMath::RadToDeg(), hit.Energy());
                 }//s3.hpge.dt.hpgepixel
             }//s3.hpge.dt
         }//s3.hpge
@@ -232,9 +243,17 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.cdte_S3time_gate->Fill(cdteHit.Index(), dT);
                 H.cdte_S3->Fill(cdteHit.Index(), cdteEnergy);
                 H.cdte_energy_S3->Fill(cdteEnergy);
+                const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos);
+                const double dopplerEnergy = cdteHit.DopplerCorrectedEnergy(openingAngle, beta);
+                const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
+                const double dopplerEnergyBeam = cdteHit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
+                H.cdte_doppler->Fill(dopplerEnergy);
+                H.cdte_ring_doppler->Fill(s3Ring, dopplerEnergy);
+                H.cdte_doppler_beam->Fill(dopplerEnergyBeam);
+                H.cdte_ring_doppler_beam->Fill(s3Ring, dopplerEnergyBeam);
                 if(s3Ring < kS3RingKinematicsCount) {
-                    const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos) * TMath::RadToDeg();
-                    H.CdTeKinematics[s3Ring]->Fill(openingAngle, cdteEnergy);
+                    H.CdTeKinematics[s3Ring]->Fill(openingAngle * TMath::RadToDeg(), cdteEnergy);
+                    H.CdTeKinematicsBeam[s3Ring]->Fill(openingAngleBeam * TMath::RadToDeg(), cdteEnergy);
                 }//s3.cdte.dt.cdpixel
 
                 for(const HPGeHit* hpgeHit : gatedHpgeHits) {

@@ -25,7 +25,8 @@ struct DetHitScratch {
 
 struct HistogramGateRefs {
     const TGraph* invkin = nullptr;
-    const TGraph* betatheta = nullptr;
+    const TGraph* beta = nullptr;
+    const TGraph* betabeam = nullptr;
     double cdteS3up = 100, cdteS3down = -100;
     double hpgeS3up = 100, hpgeS3down = -100;
 };
