@@ -1,3 +1,5 @@
+# ../bin/BuildCal BuildCal.inp 
+#
 # BuildCal command file syntax:
 #   # comments are ignored
 #   output filename.cal
@@ -13,10 +15,9 @@
 # DetectorType values:
 #   HPGe LaBr SiDeltaE Si SiDeltaE_B Si_B Solar Dice CdTe S3Ring S3Sector
 #
-# Compact equivalent of CdTeS3Build.C for bin/BuildCal.
-output S3CalFile.cal
 
-range_type 0 0 31 S3Sector
+output InitialCalFile.cal
+
 range_index 0 0 31 0
 range_toff 0 0 31 -10
 toff 0 25 -30
