@@ -17,6 +17,7 @@
 #include <TGraph.h>
 #include <filesystem>
 #include <ostream>
+#include <cstdint>
 #include <Digitisers.h>
 
 using namespace std;
@@ -41,6 +42,9 @@ class JAEASortIO{
     static void WriteCalibration(string filename="cal.txt");
     static void ReadCalibration(string filename="cal.txt");
     static void PrintManual(std::ostream& os = std::cout);
+    static void SetModuleTimeOffset(int module, int32_t offset);
+    static int32_t GetModuleTimeOffset(int module);
+    static void ClearModuleTimeOffsets();
 
 	stringstream infostream;
 
@@ -82,6 +86,7 @@ class JAEASortIO{
     vector<double> NumericInputs;
     vector<TString> NumericInputNames;
     vector<TString> InputRootSpecs;
+    static std::vector<int32_t> ModuleTimeOffsets;
 
     void AddInputRootSpec(const TString& inputSpec);
 	bool ProcessInputs();

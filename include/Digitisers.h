@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 
 #include <Globals.h>
@@ -31,14 +32,14 @@ protected:
 
     Long64_t lastTs = -1;
     Long64_t disorderCount = 0;
+    int32_t timeOffset = 0;
 
     static Long64_t TS_TOLERANCE; // ns
     
 public:
     static void SetTsTolerance(Long64_t ts){TS_TOLERANCE=ts;}
 
-    DigitiserBase(TString runName, int module)
-        : run(runName), mod(module) {}
+    DigitiserBase(TString runName, int module);
 
     virtual ~DigitiserBase() {
         if (file.is_open()) file.close();
@@ -97,6 +98,9 @@ public:
 
             ev.mod = mod;
             if (!decode(Dbuf, ev)) continue;
+            if (timeOffset != 0) {
+                ev.ts += timeOffset;
+            }
 
             // --- Disorder check ---
             if (lastTs >= 0 && ev.ts < lastTs - TS_TOLERANCE) {

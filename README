@@ -38,6 +38,12 @@ JAEASortIO input syntax
     -APV8016A zeroindex
       zeroindex is the module number corresponding to fmodl=1.
       If not provided, modules are indexed in order of .bin file discovery.
+  digitiser timestamp offsets:
+    -TOffN offset
+      Applies `offset` to every timestamp read from module `N`.
+      Example: `-TOff4 4000`
+      Offsets may be negative.
+      Applied before event building. Use cal file for small individual channel adjustments
   numeric options:
     -OptionName value
       stores value under OptionName for later access via IO::TestInput()/IO::GetInput().

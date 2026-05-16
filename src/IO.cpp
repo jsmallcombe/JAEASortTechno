@@ -10,6 +10,7 @@
 #include "EmbeddedManual.h"
 
 JAEASortIO* gIO = nullptr;
+std::vector<int32_t> JAEASortIO::ModuleTimeOffsets;
 
 namespace {
 
@@ -307,6 +308,39 @@ void JAEASortIO::ReadCalibration(string filename){
 void WriteCal(string filename){JAEASortIO::WriteCalibration(filename);};
 void ReadCal(string filename){JAEASortIO::ReadCalibration(filename);};
 
+void JAEASortIO::SetModuleTimeOffset(int module, int32_t offset)
+{
+    if (module < 0) {
+        return;
+    }
+
+    const size_t index = static_cast<size_t>(module);
+    if (ModuleTimeOffsets.size() <= index) {
+        ModuleTimeOffsets.resize(index + 1, 0);
+    }
+
+    ModuleTimeOffsets[index] = offset;
+}
+
+int32_t JAEASortIO::GetModuleTimeOffset(int module)
+{
+    if (module < 0) {
+        return 0;
+    }
+
+    const size_t index = static_cast<size_t>(module);
+    if (index >= ModuleTimeOffsets.size()) {
+        return 0;
+    }
+
+    return ModuleTimeOffsets[index];
+}
+
+void JAEASortIO::ClearModuleTimeOffsets()
+{
+    ModuleTimeOffsets.clear();
+}
+
 bool stringToInt(const std::string& str, int& result) {
     try {
         size_t pos;
@@ -422,6 +456,7 @@ void JAEASortIO::ResolveInputFiles()
 bool JAEASortIO::ProcessInputs(){
     InputRootSpecs.clear();
     EventInputFiles.clear();
+    ClearModuleTimeOffsets();
     BinInputStem = "";
     EventTreeOutFilename = "";
     TreeOutputPath = "";
@@ -601,6 +636,21 @@ void JAEASortIO::ProcessOption(TString str){
             *this>>APV8032::ModuleZeroIndex;
         }else if(str.EqualTo("-apv8016a")){
             *this>>APV8016A::ModuleZeroIndex;
+        }else if(str.BeginsWith("-toff")){
+            TString moduleText = str;
+            moduleText.Remove(0, 5);
+
+            int module = -1;
+            if (!stringToInt(moduleText.Data(), module) || module < 0) {
+                std::cout << "INVALID MODULE TIME OFFSET OPTION " << str
+                          << " (expected -TOffN value)" << std::endl;
+                return;
+            }
+
+            int offset = 0;
+            *this >> offset;
+            SetModuleTimeOffset(module, offset);
+            std::cout << "TOff[" << module << "] : " << offset << std::endl;
         }else if(str.EqualTo("-id") || str.EqualTo("-gr")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name

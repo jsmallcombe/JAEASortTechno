@@ -1,4 +1,5 @@
 #include <Digitisers.h>
+#include <IO.h>
 
 #include <algorithm>
 
@@ -7,6 +8,12 @@ Long64_t DigitiserBase::TS_TOLERANCE = 100000; // ns
 int APV8104::ModuleZeroIndex=-1;
 int APV8032::ModuleZeroIndex=-1;
 int APV8016A::ModuleZeroIndex=-1;
+
+DigitiserBase::DigitiserBase(TString runName, int module)
+    : run(runName), mod(module)
+{
+    timeOffset = JAEASortIO::GetModuleTimeOffset(module);
+}
 
 DigitiserAdcHistograms::DigitiserAdcHistograms(DigitiserAdcHistograms&& other) noexcept
     : histograms(std::move(other.histograms)),
