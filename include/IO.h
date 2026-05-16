@@ -71,6 +71,7 @@ class JAEASortIO{
     bool TestInput(TString InputName) const;
     double GetInput(TString InputName,double=0) const;
     bool GetBoolInput(TString InputName,bool=false) const;
+    std::vector<double> GetInputs(TString InputName) const;
     std::vector<const TGraph*> ResolveGateGraphs() const;
     const TGraph* GetGateConst(u_short i=0) const;
 	

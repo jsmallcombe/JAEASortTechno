@@ -61,7 +61,12 @@ JAEASortIO input syntax
       Timestamp ordering tolerance forwarded to the digitiser readers.
     -HistChunks N
       Built-event count per histogram chunk in the direct bin->hist path.
+    -TriggerModule N
+      Repeatable. When provided, only built events containing at least one
+      hit from one of these module numbers are written.
+      Only hits from these same modules extend the build window after the
+      candidate event has started.
     -BasicHistograms 0|1
-      When set non-zero, only the detector-free basic histograms are created and filled.
+      When set non-zero, only the detector-class-free basic histograms are created and filled.
     -HistogramTimers 0|1
       When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.

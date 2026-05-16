@@ -2,6 +2,7 @@
 #define JAEASortBuiltEvent
 
 #include <Rtypes.h>
+#include <array>
 #include <cstring>
 #include <vector>
 
@@ -53,6 +54,27 @@ struct BuiltEvent {
     std::vector<UShort_t> Mod;
     std::vector<UShort_t> Ch;
     std::vector<UShort_t> Adc;
+    inline static bool TriggersEnabled = false;
+    inline static std::array<bool, 16> TriggerModules{};
+
+    static void SetTriggerModules(std::vector<UShort_t> modules)
+    {
+        TriggerModules.fill(false);
+        TriggersEnabled = !modules.empty();
+        for (UShort_t mod : modules) {
+            if (mod < TriggerModules.size()) {
+                TriggerModules[mod] = true;
+            }
+        }
+    }
+
+    static bool IsTrigger(const Event& ev)
+    {
+        if (!TriggersEnabled) {
+            return true;
+        }
+        return ev.mod < TriggerModules.size() && TriggerModules[ev.mod];
+    }
 
     void Clear()
     {
@@ -72,21 +94,23 @@ struct BuiltEvent {
         return Ts.size();
     }
 
-    void StartEvent(const Event& ev)
+    bool StartEvent(const Event& ev)
     {
         Clear();
         Ts.push_back(0);
         Mod.push_back(ev.mod);
         Ch.push_back(ev.ch);
         Adc.push_back(ev.adc);
+        return IsTrigger(ev);
     }
 
-    void AppendHit(const Event& ev, Long64_t firstTs)
+    bool AppendHit(const Event& ev, Long64_t firstTs)
     {
         Ts.push_back(SafeTsDiff(ev.ts, firstTs));
         Mod.push_back(ev.mod);
         Ch.push_back(ev.ch);
         Adc.push_back(ev.adc);
+        return IsTrigger(ev);
     }
 };
 

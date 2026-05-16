@@ -153,6 +153,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
         size_t sinceMerge = 0;
         size_t FILL_EXCESS = 0;
         size_t builtCount = 0;
+        bool isTriggered = false;
 
         auto MergeNextRefill = [&]() {
             int slotIndex = -1;
@@ -208,22 +209,27 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             if (eventBuffer.Empty()) {
                 firstTs = currentTs;
                 lastTs = currentTs;
-                eventBuffer.StartEvent(current);
+                isTriggered = eventBuffer.StartEvent(current);
             } else if (currentTs < lastTs) {
                 std::cout << "\n[TIME RESET]\n";
                 firstTs = currentTs;
                 lastTs = currentTs;
-                eventBuffer.StartEvent(current);
+                isTriggered = eventBuffer.StartEvent(current);
             } else if (currentTs - lastTs < COINC_WINDOW) {
-                eventBuffer.AppendHit(current, firstTs);
-                lastTs = currentTs;
+                const bool hitIsTrigger = eventBuffer.AppendHit(current, firstTs);
+                if (hitIsTrigger) {
+                    isTriggered = true;
+                    lastTs = currentTs;
+                }
             } else {
-                writeEvent(eventBuffer);
-                ++builtCount;
+                if (isTriggered) {
+                    writeEvent(eventBuffer);
+                    ++builtCount;
+                }
 
                 firstTs = currentTs;
                 lastTs = currentTs;
-                eventBuffer.StartEvent(current);
+                isTriggered = eventBuffer.StartEvent(current);
             }
 
             if (sinceMerge >= REFILL_TARGET + FILL_EXCESS) {
@@ -248,7 +254,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             }
         }
 
-        if (!eventBuffer.Empty()) {
+        if (!eventBuffer.Empty() && isTriggered) {
             writeEvent(eventBuffer);
             ++builtCount;
         }

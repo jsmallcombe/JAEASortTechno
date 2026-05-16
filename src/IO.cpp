@@ -774,3 +774,15 @@ double JAEASortIO::GetInput(TString InputName,double dflt) const{
 bool JAEASortIO::GetBoolInput(TString InputName,bool dflt) const{
     return GetInput(InputName, dflt ? 1.0 : 0.0) != 0.0;
 }
+
+std::vector<double> JAEASortIO::GetInputs(TString InputName) const
+{
+    InputName.ToLower();
+    std::vector<double> values;
+    for (unsigned int i = 0; i < NumericInputNames.size(); i++) {
+        if (NumericInputNames[i] == InputName) {
+            values.push_back(NumericInputs[i]);
+        }
+    }
+    return values;
+}

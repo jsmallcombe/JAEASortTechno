@@ -2,6 +2,7 @@
 #include <ThreadedSort.h>
 #include <TStopwatch.h>
 #include <iostream>
+#include <algorithm>
 #include <HistogramRuntime.h>
 #include <IOHelpers.h>
 
@@ -31,6 +32,14 @@ int main(int argc, char** argv)
     Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
     const bool BasicHistograms = gIO->GetBoolInput("BasicHistograms", false);
     const bool HistogramTimers = gIO->GetBoolInput("HistogramTimers", false);
+    std::vector<UShort_t> triggerModules;
+    for (double value : gIO->GetInputs("TriggerModule")) {
+        if (value < 0) {
+            continue;
+        }
+        triggerModules.push_back(static_cast<UShort_t>(value));
+    }
+    BuiltEvent::SetTriggerModules(std::move(triggerModules));
 
     gHistogramRuntimeOptions.basicHistogramsOnly = BasicHistograms;
     gHistogramRuntimeOptions.enableHistogramTimers = HistogramTimers;
@@ -57,6 +66,15 @@ int main(int argc, char** argv)
     }
     if (HistogramTimers) {
         std::cout << "Histogram timers enabled" << std::endl;
+    }
+    if (BuiltEvent::TriggersEnabled) {
+        std::cout << "Trigger modules:";
+        for (size_t mod = 0; mod < BuiltEvent::TriggerModules.size(); ++mod) {
+            if (BuiltEvent::TriggerModules[mod]) {
+                std::cout << ' ' << mod;
+            }
+        }
+        std::cout << std::endl;
     }
 
     int status = 0;
