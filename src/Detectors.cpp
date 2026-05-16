@@ -7,6 +7,7 @@ vector<vector<ChannelCalibration>> DetHit::ChanCal;
 namespace {
 const ChannelCalibration gDefaultCalibration{};
 const char* const gDetTypeNames[] = {
+    "null",
     "HPGe",
     "LaBr",
     "SiDeltaE",

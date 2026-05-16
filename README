@@ -41,9 +41,10 @@ JAEASortIO input syntax
   numeric options:
     -OptionName value
       stores value under OptionName for later access via IO::TestInput()/IO::GetInput().
-  particle-ID gates:
-    -ID gatefile.root gate_id
-      loads the first TCutG found in gatefile.root and associates it with gate_id.
+  particle-ID gates / Graph inputs:
+    -ID GateFile.root gate_id
+    -GR GraphFile.root gate_id
+      loads the first TGraph inheriting object (inc TCutG) found in GateFile.root and associates it with gate_id.
 
   Additional runtime tuning options used by JAEASortTechnoAP:
     -Workers N
