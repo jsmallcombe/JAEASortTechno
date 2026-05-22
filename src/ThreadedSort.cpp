@@ -52,8 +52,25 @@ bool WriteAndCloseCurrentTreeFile(TTree* tree)
         return false;
     }
 
+    std::cout << "\n[SORT DEBUG] tree write starting"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | entries=" << tree->GetEntriesFast()
+              << " file=" << currentFile->GetName()
+              << std::endl;
     currentFile->Write("", TObject::kOverwrite);
+    std::cout << "\n[SORT DEBUG] tree write finished"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | entries=" << tree->GetEntriesFast()
+              << " file=" << currentFile->GetName()
+              << std::endl;
     currentFile->Close();
+    std::cout << "\n[SORT DEBUG] tree file close finished"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | file=" << currentFile->GetName()
+              << std::endl;
     return true;
 }
 
@@ -93,9 +110,19 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                                   outtree->Fill();
                               },
                               ADChists);
+    std::cout << "\n[SORT DEBUG] BuildEventsFromDigitisers returned"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " buffer=" << g_idx.load() << "/" << g_buffer_size.load()
+              << std::endl;
 
     doneFlag = true;
     monitorThread.join();
+    std::cout << "\n[SORT DEBUG] monitor thread joined"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " buffer=" << g_idx.load() << "/" << g_buffer_size.load()
+              << std::endl;
 
     return 0;
 }
@@ -185,25 +212,65 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                   }
                               },
                               nullptr);
+    std::cout << "\n[SORT DEBUG] BuildEventsFromDigitisers returned"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " buffer=" << g_idx.load() << "/" << g_buffer_size.load()
+              << std::endl;
 
     queueCompletedChunk();
+    std::cout << "\n[SORT DEBUG] final histogram chunk queued"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | queued_events=" << g_QueuedBuiltEvents.load()
+              << std::endl;
     chunkQueue.set_finished();
+    std::cout << "\n[SORT DEBUG] histogram queue marked finished"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | waiting for histogram consumer"
+              << std::endl;
 
     histogramConsumer.join();
+    std::cout << "\n[SORT DEBUG] histogram consumer joined"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " buffer=" << g_idx.load() << "/" << g_buffer_size.load()
+              << std::endl;
     doneFlag = true;
     monitorThread.join();
+    std::cout << "\n[SORT DEBUG] monitor thread joined"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " buffer=" << g_idx.load() << "/" << g_buffer_size.load()
+              << std::endl;
     
     if (chunkBuffer != nullptr) {
         delete chunkBuffer;
     }
 
     if (writeTree && treeOutput.tree != nullptr) {
+        std::cout << "\n[SORT DEBUG] starting final tree close"
+                  << " | read=" << g_ReadCount.load()
+                  << " built=" << g_BuiltCount.load()
+                  << " | entries=" << treeOutput.tree->GetEntriesFast()
+                  << std::endl;
         WriteAndCloseCurrentTreeFile(treeOutput.tree);
     }
 
+    std::cout << "\n[SORT DEBUG] starting histogram file write"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | " << histogramOutfilename.Data()
+              << std::endl;
     if (!WriteHistogramFile(histograms, histogramOutfilename, true)) {
         return 5;
     }
+    std::cout << "\n[SORT DEBUG] histogram file write finished"
+              << " | read=" << g_ReadCount.load()
+              << " built=" << g_BuiltCount.load()
+              << " | " << histogramOutfilename.Data()
+              << std::endl;
 
     if (writeTree) {
         std::cout << "Wrote event tree to " << treeOutfilename << '\n';

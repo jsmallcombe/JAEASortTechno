@@ -36,7 +36,7 @@ inline UShort_t SafeTsDiff(Long64_t ts, Long64_t firstTs)
     Long64_t diff = ts - firstTs;
     
     if (diff < 0 || diff > std::numeric_limits<UShort_t>::max()) {
-        std::cout << "[TS ERROR] diff=" << diff << std::endl;
+        std::cout << "\n[TS ERROR] diff=" << diff << std::endl;
         
         if (diff < 0) diff = 0;
         if (diff > std::numeric_limits<UShort_t>::max())

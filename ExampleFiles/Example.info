@@ -1,5 +1,6 @@
 #-bin /filepath/runprefix
 -treepath TreeFiles
+#-h
 #-hist path/hist.root
 -O
 configs/initial.cal
@@ -21,7 +22,7 @@ configs/initial.cal
 #-HpGeS3Down-100
 
 -S3FrontBackEnergy 0.9
--S3FrontBackTime 1.2
+-FrontBackOffset 10
 -S3FrontBackTime 200
 #-S3PreferenceSector 1 
 -S3MultiHit 0 

@@ -16,8 +16,6 @@
 
 #include <Globals.h>
 #include <BuiltEvent.h>
-
-
 // =========================
 // Base digitiser
 // =========================
@@ -64,6 +62,11 @@ public:
         if (!file) {
             isOpen = false;
             std::cout<<"Failed to open file "<<fname<<std::endl;
+            std::cout << "[SORT DEBUG] digitiser reached end of input"
+                      << " | module=" << mod
+                      << " next_file_index=" << fileIndex
+                      << " last_ts=" << lastTs
+                      << std::endl;
             isFinished = true; 
             return false;
         }
@@ -108,7 +111,7 @@ public:
                 disorderCount++;
 
                 if (disorderCount < 10 || disorderCount % 1000 == 0) {
-                    std::cout << "[TS DISORDER] Digi " << mod
+                    std::cout << "\n[TS DISORDER] Digi " << mod
                               << " prev=" << lastTs
                               << " new=" << ev.ts
                               << " dT=" << (ev.ts - lastTs)

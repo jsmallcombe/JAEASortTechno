@@ -99,7 +99,7 @@ void ProcessChainBufferedDefault(TChain* chain, TTree* outtree,Long64_t tdiff,si
         else {
             
             if (tTs_local < lastTs) {
-                std::cout << "[TIME RESET]\n";
+                std::cout << "\n[TIME RESET]\n";
                 
                 tTs_vec.clear();
                 tMod_vec.clear();

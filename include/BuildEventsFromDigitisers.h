@@ -136,7 +136,6 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
     buildBuffer.reserve(BUFFER_TARGET);
     size_t readCount = FillSortedBlock(-1, buildBuffer, BUFFER_TARGET);
     g_ReadCount = readCount;
-
     if (buildBuffer.empty()) {
         g_buffer_size = 0;
         g_idx = 0;
@@ -154,6 +153,7 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
         size_t FILL_EXCESS = 0;
         size_t builtCount = 0;
         bool isTriggered = false;
+        bool reportedProducerDoneNoReady = false;
 
         auto MergeNextRefill = [&]() {
             int slotIndex = -1;
@@ -164,11 +164,20 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                 });
 
                 if (refills.readyOrder.empty()) {
+                    if (!reportedProducerDoneNoReady) {
+                        std::cout << "\n[SORT DEBUG] consumer saw producerDone with no refill ready"
+                                  << " | read=" << g_ReadCount.load()
+                                  << " built=" << builtCount
+                                  << " buffer=" << idx << "/" << buildBuffer.size()
+                                  << std::endl;
+                        reportedProducerDoneNoReady = true;
+                    }
                     return static_cast<size_t>(0);
                 }
 
                 slotIndex = refills.readyOrder.front();
                 refills.readyOrder.pop_front();
+                reportedProducerDoneNoReady = false;
             }
 
             auto& refillBuffer = refills.slots[slotIndex].events;
@@ -197,10 +206,38 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
             return added;
         };
 
+        auto HandleMergedRefill = [&](size_t merged) {
+            if (merged == 0) {
+                return;
+            }
+
+            if (merged > REFILL_TARGET) {
+                FILL_EXCESS = merged - REFILL_TARGET;
+            } else {
+                FILL_EXCESS = 0;
+            }
+
+            // Compact only occasionally so the consumer keeps working on
+            // one contiguous active region instead of shifting on every merge.
+            if (buildBuffer.size() > 2 * BUFFER) {
+                buildBuffer.erase(buildBuffer.begin(), buildBuffer.begin() + idx);
+                idx = 0;
+            }
+        };
+
         // The consumer owns the active ordered buffer and the current
         // coincidence event state. It only pauses to merge a refill block
         // that the producer has already read and locally sorted.
-        while (idx < buildBuffer.size()) {
+        while (true) {
+            if (idx >= buildBuffer.size()) {
+                const size_t merged = MergeNextRefill();
+                if (merged == 0) {
+                    break;
+                }
+                HandleMergedRefill(merged);
+                continue;
+            }
+
             Event& current = buildBuffer[idx++];
             ++sinceMerge;
 
@@ -234,17 +271,8 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
 
             if (sinceMerge >= REFILL_TARGET + FILL_EXCESS) {
                 const size_t merged = MergeNextRefill();
-                if (merged > REFILL_TARGET) {
-                    FILL_EXCESS = merged - REFILL_TARGET;
-                }
+                HandleMergedRefill(merged);
                 sinceMerge = 0;
-
-                // Compact only occasionally so the consumer keeps working on
-                // one contiguous active region instead of shifting on every merge.
-                if (buildBuffer.size() > 2 * BUFFER) {
-                    buildBuffer.erase(buildBuffer.begin(), buildBuffer.begin() + idx);
-                    idx = 0;
-                }
             }
 
             if ((idx % 1000) == 0) {
@@ -262,6 +290,11 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
         g_buffer_size = buildBuffer.size();
         g_idx = idx;
         g_BuiltCount = builtCount;
+        std::cout << "\n[SORT DEBUG] consumer finished event building"
+                  << " | read=" << g_ReadCount.load()
+                  << " built=" << builtCount
+                  << " buffer=" << idx << "/" << buildBuffer.size()
+                  << std::endl;
     });
 
     // The main thread becomes the producer after the initial full buffer is
@@ -314,6 +347,14 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                            ? static_cast<int>(RefillSlot::State::Free)
                            : static_cast<int>(RefillSlot::State::Ready));
         refills.cv.notify_all();
+
+        if (slot.events.empty()) {
+            std::cout << "\n[SORT DEBUG] producer marked input finished"
+                      << " | read=" << readCount
+                      << " built=" << g_BuiltCount.load()
+                      << " | slot=" << slotIndex
+                      << std::endl;
+        }
 
         if (slot.events.empty()) {
             break;
