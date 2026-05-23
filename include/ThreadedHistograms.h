@@ -13,23 +13,23 @@
 #define JAEA_THREADED_DETECTOR_HISTOGRAM_LIST(X) \
     X(TH1F, s3_raw_ring_mult, "s3_raw", "S3 raw ring multiplicity", 11, -0.5, 10.5) \
     X(TH1F, s3_raw_sector_mult, "s3_raw", "S3 raw sector multiplicity", 11, -0.5, 10.5) \
-    X(TH2F, s3_raw_ring_energy, "s3_raw", "S3 raw ring energy;Ring;Ring energy", 24, -0.5, 23.5, 1024, 0, 8192) \
-    X(TH2F, s3_raw_sector_energy, "s3_raw", "S3 raw sector energy;Sector;Sector energy", 32, -0.5, 31.5, 1024, 0, 8192) \
+    X(TH2F, s3_raw_ring_energy, "s3_raw", "S3 raw ring energy;Ring;Ring energy", 24, -0.5, 23.5, 1000, 0, 200) \
+    X(TH2F, s3_raw_sector_energy, "s3_raw", "S3 raw sector energy;Sector;Sector energy", 32, -0.5, 31.5, 1000, 0, 200) \
     X(TH2F, s3_raw_ring_sector, "s3_raw", "S3 raw ring vs sector;Sector;Ring", 32, -0.5, 31.5, 24, -0.5, 23.5) \
-    X(TH2F, s3_raw_ring_sector_energy, "s3_raw", "S3 raw ring energy vs sector energy;Ring energy;Sector energy", 512, 0, 8192, 512, 0, 8192) \
-    X(TH3I, s3_raw_sector_vs_sector_ring_energy, "s3_raw", "S3 raw sector vs sector energy vs ring energy;Sector;Sector energy;Ring energy", 32, -0.5, 31.5, 52, 0, 8192, 52, 0, 8192) \
-    X(TH3I, s3_raw_ring_vs_sector_ring_energy, "s3_raw", "S3 raw ring vs sector energy vs ring energy;Ring;Sector energy;Ring energy", 24, -0.5, 23.5, 52, 0, 8192, 52, 0, 8192) \
+    X(TH2F, s3_raw_ring_sector_energy, "s3_raw", "S3 raw ring energy vs sector energy;Ring energy;Sector energy", 500, 0, 200, 500, 0, 200) \
+    X(TH3I, s3_raw_sector_vs_sector_ring_energy, "s3_raw", "S3 raw sector vs sector energy vs ring energy;Sector;Sector energy;Ring energy", 32, -0.5, 31.5, 50, 0, 200, 50, 0, 200) \
+    X(TH3I, s3_raw_ring_vs_sector_ring_energy, "s3_raw", "S3 raw ring vs sector energy vs ring energy;Ring;Sector energy;Ring energy", 24, -0.5, 23.5, 50, 0, 200, 50, 0, 200) \
     X(TH1F, s3_raw_ring_sector_dt, "s3_raw", "S3 raw ring-sector time difference;Ring - sector time", 201, -1005, 1005) \
     X(TH2F, s3_raw_ring_dt, "s3_raw", "S3 raw ring vs ring-sector time difference;Ring;Ring - sector time", 24, -0.5, 23.5, 201, -1005, 1005) \
     X(TH2F, s3_raw_sector_dt, "s3_raw", "S3 raw sector vs ring-sector time difference;Sector;Ring - sector time", 32, -0.5, 31.5, 201, -1005, 1005) \
     X(TH1F, s3_pixel_mult, "s3_pixels", "S3 built pixel multiplicity", 11, -0.5, 10.5) \
     X(TH2F, s3_pixel_ring_sector, "s3_pixels", "S3 built pixel ring vs sector;Sector;Ring", 32, -0.5, 31.5, 24, -0.5, 23.5) \
-    X(TH1F, s3_pixel_energy, "s3_pixels", "S3 built pixel primary energy;Energy", 1024, 0, 8192) \
-    X(TH2F, s3_pixel_ring_energy, "s3_pixels", "S3 built pixel ring vs primary energy;Ring;Energy", 24, -0.5, 23.5, 1024, 0, 8192) \
-    X(TH2F, s3_pixel_sector_energy, "s3_pixels", "S3 built pixel sector vs primary energy;Sector;Energy", 32, -0.5, 31.5, 1024, 0, 8192) \
-    X(TH2F, s3_pixel_ring_sector_energy, "s3_pixels", "S3 built pixel ring energy vs sector energy;Ring energy;Sector energy", 512, 0, 8192, 512, 0, 8192) \
+    X(TH1F, s3_pixel_energy, "s3_pixels", "S3 built pixel primary energy;Energy", 1000, 0, 200) \
+    X(TH2F, s3_pixel_ring_energy, "s3_pixels", "S3 built pixel ring vs primary energy;Ring;Energy", 24, -0.5, 23.5, 1000, 0, 200) \
+    X(TH2F, s3_pixel_sector_energy, "s3_pixels", "S3 built pixel sector vs primary energy;Sector;Energy", 32, -0.5, 31.5, 1000, 0, 200) \
+    X(TH2F, s3_pixel_ring_sector_energy, "s3_pixels", "S3 built pixel ring energy vs sector energy;Ring energy;Sector energy", 500, 0, 200, 500, 0, 200) \
     X(TH1F, s3_pixel_ring_sector_dt, "s3_pixels", "S3 built pixel ring-sector time difference;Ring - sector time", 201, -1005, 1005) \
-    X(TH2F, s3_pixel_theta_energy, "s3_pixels", "S3 built pixel theta vs energy;Theta [rad];Energy", 180, 0, 3.14159265358979323846, 1024, 0, 8192) \
+    X(TH2F, s3_pixel_theta_energy, "s3_pixels", "S3 built pixel theta vs energy;Theta [rad];Energy", 180, 0, 3.14159265358979323846, 1000, 0, 200) \
     X(TH2F, s3_pixel_position_xy, "s3_pixels", "S3 built pixel position;X;Y", 200, -50, 50, 200, -50, 50) \
     X(TH3F, s3_pixel_position_xyz, "s3_pixels", "S3 built pixel position;Z;X;Y", 120, -60, 60, 120, -60, 60, 120, -60, 60) \
     X(TH2F, cdte_chan, "gammas", "CdTe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2500, 0, 500) \
