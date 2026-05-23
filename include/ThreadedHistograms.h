@@ -42,7 +42,7 @@
     X(TH2F, cdte_ring_doppler, "gammas", "S3 ring vs CdTe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 1000, 0, 500) \
     X(TH1F, cdte_doppler_beam, "kinematics_beam", "CdTe Doppler-corrected energy (beam);Energy [keV]", 1000, 0, 500) \
     X(TH2F, cdte_ring_doppler_beam, "kinematics_beam", "S3 ring vs CdTe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 1000, 0, 500) \
-    X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 160, -40, 40, 160, -40, 40, 160, -40, 40) \
+    X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 400, -100, 100, 400, -100, 100, 400, -100, 100) \
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1000, 0, 1000) \
     X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_energy_S3, "gammas", "HPGe summed energy (S3 gated);Energy [keV]", 4000, 0, 2000) \
