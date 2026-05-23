@@ -7,6 +7,8 @@ R__LOAD_LIBRARY(bin/libJAEASort.so)
 
 void BuildCal_ROOT(const char* outputFile = "CalFile.cal")
 {
+    // ReadCal("BaseCalFile.cal");
+
     for (int i = 0; i < 32; i++) {
         DetHit::SetDetType(0, i, DetHit::S3Sector);
         DetHit::SetIndex(0, i, i);

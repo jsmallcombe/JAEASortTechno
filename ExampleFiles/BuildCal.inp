@@ -2,6 +2,7 @@
 #
 # BuildCal command file syntax:
 #   # comments are ignored
+#   input existing.cal
 #   output filename.cal
 #   type  mod chan DetectorType
 #   index mod chan index
@@ -16,6 +17,7 @@
 #   HPGe LaBr SiDeltaE Si SiDeltaE_B Si_B Solar Dice CdTe S3Ring S3Sector
 #
 
+# input PreviousCalibration.cal
 output InitialCalFile.cal
 
 range_index 0 0 31 0

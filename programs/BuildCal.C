@@ -48,6 +48,7 @@ void PrintCommandSyntax()
     std::cout
         << "Command file syntax:\n"
         << "  # comments are ignored\n"
+        << "  input existing.cal\n"
         << "  output filename.cal\n"
         << "  type  mod chan DetectorType\n"
         << "  index mod chan index\n"
@@ -79,7 +80,11 @@ void ProcessCommand(const std::string& line, std::string& outputFile)
         return;
     }
 
-    if (command == "output") {
+    if (command == "input" || command == "load") {
+        const std::string inputCalibration = ReadValue<std::string>(input, "input calibration filename");
+        RequireLineEnd(input);
+        ReadCal(inputCalibration);
+    } else if (command == "output") {
         outputFile = ReadValue<std::string>(input, "output filename");
         RequireLineEnd(input);
     } else if (command == "type" || command == "dettype") {
