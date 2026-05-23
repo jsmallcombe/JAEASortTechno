@@ -22,32 +22,53 @@ void BindBuiltEventTreeBranches(TTree* tree, BuiltEvent& event)
 }
 
 struct EventTreeOutput {
-    std::unique_ptr<TFile> file;
+    TString filename;
     TTree* tree = nullptr;
 };
 
 EventTreeOutput CreateEventTreeOutput(const TString& outfilename)
 {
     EventTreeOutput output;
-    output.file.reset(TFile::Open(outfilename, "RECREATE"));
-    if (!output.file || output.file->IsZombie()) {
+    TFile* file = TFile::Open(outfilename, "RECREATE");
+    if (!file || file->IsZombie()) {
         return output;
     }
 
+    output.filename = outfilename;
     output.tree = new TTree("EventTree", "EventTree");
-    output.tree->SetDirectory(output.file.get());
+    output.tree->SetDirectory(file);
     output.tree->SetMaxTreeSize(1900LL * 1024 * 1024);
     output.tree->SetAutoSave(0);
     return output;
 }
 
-bool WriteAndCloseCurrentTreeFile(TTree* tree)
+bool WriteAdcHistogramsToFile(const TString& outfilename, DigitiserAdcHistograms& histograms)
 {
-    if (tree == nullptr) {
+    TFile* file = TFile::Open(outfilename, "UPDATE");
+    if (file == nullptr || file->IsZombie()) {
+        std::cerr << "Could not reopen output tree file for ADC histograms " << outfilename << '\n';
         return false;
     }
 
-    TFile* currentFile = tree->GetCurrentFile();
+    std::cout << "\n[SORT DEBUG] ADC histogram write starting"
+              << " | file=" << outfilename
+              << std::endl;
+    histograms.Write();
+    file->Write("", TObject::kOverwrite);
+    file->Close();
+    std::cout << "\n[SORT DEBUG] ADC histogram write finished"
+              << " | file=" << outfilename
+              << std::endl;
+    return true;
+}
+
+bool WriteAndCloseTreeOutput(EventTreeOutput& output)
+{
+    if (output.tree == nullptr) {
+        return false;
+    }
+
+    TFile* currentFile = output.tree->GetCurrentFile();
     if (currentFile == nullptr) {
         return false;
     }
@@ -55,14 +76,14 @@ bool WriteAndCloseCurrentTreeFile(TTree* tree)
     std::cout << "\n[SORT DEBUG] tree write starting"
               << " | read=" << g_ReadCount.load()
               << " built=" << g_BuiltCount.load()
-              << " | entries=" << tree->GetEntriesFast()
+              << " | entries=" << output.tree->GetEntriesFast()
               << " file=" << currentFile->GetName()
               << std::endl;
     currentFile->Write("", TObject::kOverwrite);
     std::cout << "\n[SORT DEBUG] tree write finished"
               << " | read=" << g_ReadCount.load()
               << " built=" << g_BuiltCount.load()
-              << " | entries=" << tree->GetEntriesFast()
+              << " | entries=" << output.tree->GetEntriesFast()
               << " file=" << currentFile->GetName()
               << std::endl;
     currentFile->Close();
@@ -71,6 +92,8 @@ bool WriteAndCloseCurrentTreeFile(TTree* tree)
               << " built=" << g_BuiltCount.load()
               << " | file=" << currentFile->GetName()
               << std::endl;
+
+    output.tree = nullptr;
     return true;
 }
 
@@ -156,7 +179,7 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
     EventTreeOutput treeOutput;
     if (writeTree) {
         treeOutput = CreateEventTreeOutput(treeOutfilename);
-        if (!treeOutput.file || treeOutput.tree == nullptr) {
+        if (treeOutput.tree == nullptr) {
             std::cerr << "Could not create output tree file " << treeOutfilename << '\n';
             return 5;
         }
@@ -255,7 +278,7 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                   << " built=" << g_BuiltCount.load()
                   << " | entries=" << treeOutput.tree->GetEntriesFast()
                   << std::endl;
-        WriteAndCloseCurrentTreeFile(treeOutput.tree);
+        WriteAndCloseTreeOutput(treeOutput);
     }
 
     std::cout << "\n[SORT DEBUG] starting histogram file write"
@@ -298,13 +321,13 @@ void MakeEventTreeFromBin(TString infilename,
     }
 
     EventTreeOutput treeOutput = CreateEventTreeOutput(outfilename);
-    if (!treeOutput.file || treeOutput.tree == nullptr) {
+    if (treeOutput.tree == nullptr) {
         std::cerr << "Could not create output tree file " << outfilename << '\n';
         return;
     }
 
     ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize);
-    WriteAndCloseCurrentTreeFile(treeOutput.tree);
+    WriteAndCloseTreeOutput(treeOutput);
 }
 
 int ThreadedSort(TChain* eventData,
@@ -361,15 +384,14 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
 
         DigitiserAdcHistograms ADChists = BuildDigitiserAdcHistograms(digitisers);
         EventTreeOutput treeOutput = CreateEventTreeOutput(eventTreeOutfilename);
-        if (!treeOutput.file || treeOutput.tree == nullptr) {
+        if (treeOutput.tree == nullptr) {
             std::cerr << "Could not create output tree file " << eventTreeOutfilename << '\n';
             return 5;
-        }else{
-            ADChists.SetDirectory(treeOutput.file.get());
         }
 
         ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize, &ADChists);
-        WriteAndCloseCurrentTreeFile(treeOutput.tree);
+        WriteAndCloseTreeOutput(treeOutput);
+        WriteAdcHistogramsToFile(eventTreeOutfilename, ADChists);
         return 0;
     }
 
