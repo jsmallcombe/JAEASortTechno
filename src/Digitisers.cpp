@@ -181,7 +181,7 @@ DigitiserAdcHistograms BuildDigitiserAdcHistograms(const std::vector<std::unique
             hTitl.Form("histgram of ADC for %s-%d, Ch=%02d",
                            digitiser->name().c_str(), module, channel + 1);
 
-            TH1F* histogram = new TH1F(hName.Data(), hTitl.Data(), 8192, 0.5, 8192.5);
+            TH1F* histogram = new TH1F(hName.Data(), hTitl.Data(), 16384, 0.5, 16384.5);
             histSet.histograms.push_back(histogram);
             histSet.ownedByThis.push_back(histogram->GetDirectory() == nullptr);
         }
