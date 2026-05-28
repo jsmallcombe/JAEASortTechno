@@ -25,10 +25,10 @@ int main(int argc, char** argv)
     ConfigureS3DetFromIO();
 
     int HistWorkers = gIO->GetInput("Workers", 4);
-    Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff);
+    Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff*10)/10.;
     int ChunkSize = gIO->GetInput("BinChunk", gBinChunkDefaultSize);
     int BufferSize = gIO->GetInput("BuildBuffer", gBuildBuffDefaultSize);
-    Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE);
+    Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE*10)/10;
     Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
     const bool BasicHistograms = gIO->GetBoolInput("BasicHistograms", false);
     const bool HistogramTimers = gIO->GetBoolInput("HistogramTimers", false);
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 
     cout<<endl<<"Input summary:"<<endl;
     if (gIO->TestInput("Window")) {
-        std::cout << "Build window default overidden: " << TS_Diff <<" ns" << std::endl;
+        std::cout << "Build window default overidden: " << TS_Diff*10 <<" ns" << std::endl;
     }
     if (gIO->TestInput("BinChunk")) {
         std::cout << "Chunk size overridden: " << ChunkSize << std::endl;
@@ -56,7 +56,7 @@ int main(int argc, char** argv)
         std::cout << "Build buffer overridden: " << BufferSize << std::endl;
     }
     if (gIO->TestInput("Tolerance")) {
-        std::cout << "Timestamp tolerance overridden: " << TsTolerance << std::endl;
+        std::cout << "Timestamp tolerance overridden: " << TsTolerance*10 << std::endl;
     }
     if (gIO->TestInput("HistChunks")) {
         std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;

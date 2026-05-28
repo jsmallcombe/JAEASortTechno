@@ -15,6 +15,7 @@ namespace {
 // cleared and refilled for each coincidence event.
 void BindBuiltEventTreeBranches(TTree* tree, BuiltEvent& event)
 {
+    tree->Branch("Ts_l",  &event.Ts_l);
     tree->Branch("Ts",  &event.Ts);
     tree->Branch("Mod", &event.Mod);
     tree->Branch("Ch",  &event.Ch);

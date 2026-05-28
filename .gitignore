@@ -3,3 +3,9 @@ bin/*
 !bin/.gitkeep
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+scripts/Bin2RootClassy_C_ACLiC_dict_rdict.pcm
+scripts/Bin2RootClassy_C_ACLiC_dict9e8c00a6f4_dictContent.h
+scripts/Bin2RootClassy_C_ACLiC_dictc5b2860875_dictUmbrella.h
+scripts/Bin2RootClassy_C.d
+scripts/MakeEventTreeNew_C_ACLiC_dict_rdict.pcm
+scripts/MakeEventTreeNew_C.d

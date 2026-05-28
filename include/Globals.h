@@ -9,8 +9,8 @@
 #include <thread>
 
 // Event Building
-constexpr Long64_t gTS_TOLERANCE = 100000;// Maximum allowed timestamp gap for disordered .bin files
-constexpr Long64_t gTS_Diff = 2000; // Maximum allowed timestamp difference for event building (ns)
+constexpr Long64_t gTS_TOLERANCE = 10000;// Maximum allowed timestamp gap for disordered .bin files
+constexpr Long64_t gTS_Diff = 200; // Maximum allowed timestamp difference for event building (10* ns tick)
 constexpr size_t gBinChunkDefaultSize=50; // Events read per digitiser
 constexpr size_t gBuildBuffDefaultSize=1'000'000; // Nominal size of the event building buffer
 constexpr size_t gBuildRefillDivisor=10; // Franction of gBuildBuffDefaultSize to be consumed before refill

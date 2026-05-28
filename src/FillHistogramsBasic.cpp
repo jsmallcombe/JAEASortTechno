@@ -16,21 +16,19 @@ void FillHistogramsBasic(HistogramRefsBasic& H, const BuiltEventView& event)
 
         if (mod == 1) {
             for (size_t j = 0; j < event.Size(); ++j) {
-                if (event.Mod[j] == 2) {
+                if (event.Mod[j] == 0) {
                     const double dT = static_cast<double>(event.Ts[i]) - static_cast<double>(event.Ts[j]);
                     H.siall->Fill(event.Ch[j], ch);
                     H.ring_sector_E->Fill(event.Adc[j], event.Adc[i]);
                     H.sector_ring_energy_double->Fill(static_cast<double>(event.Adc[j]),
                                                       static_cast<double>(event.Adc[i]));
-                    if (ch != 11 && ch != 16 && ch != 17 && ch != 18) {
-                        H.ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
-                        H.sidt->Fill(dT);
-                    }
+                    H.ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
+                    H.sidt->Fill(dT);
+
                     if (dT > -100.0 && dT < 100.0) {
                         H.pmpt_ring_sector_E->Fill(event.Adc[j], event.Adc[i]);
-                        if (ch != 11 && ch != 16 && ch != 17 && ch != 18) {
-                            H.pmpt_ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
-                        }
+
+                        //H.pmpt_ring_sector_E_reduced->Fill(event.Adc[j], event.Adc[i]);
 
                         if (event.Adc[i] != 0) {
                             H.hSectE_divRingE->Fill(static_cast<double>(event.Adc[j]) /
@@ -43,13 +41,13 @@ void FillHistogramsBasic(HistogramRefsBasic& H, const BuiltEventView& event)
 
                         if (event.Adc[i] > 120 && event.Adc[j] > 120) {
                             for (size_t k = 0; k < event.Size(); ++k) {
-                                if (event.Mod[k] == 3 && event.Ch[k] > 7) {
+                                if (event.Mod[k] == 2) {
                                     const double dT_sect_cdte = static_cast<double>(event.Ts[j]) -
                                                                 static_cast<double>(event.Ts[k]);
                                     H.hSect_CdTe_dT->Fill(dT_sect_cdte);
                                     H.hSect_CdTe_dT_ADC->Fill(dT_sect_cdte, event.Adc[k]);
                                 }
-                                if (event.Mod[k] == 4) {
+                                if (event.Mod[k] == 3) {
                                     const double dT_sect_hpge = static_cast<double>(event.Ts[j]) -
                                                                 static_cast<double>(event.Ts[k]);
                                     H.hSect_HPGe_dT->Fill(dT_sect_hpge);
@@ -64,9 +62,9 @@ void FillHistogramsBasic(HistogramRefsBasic& H, const BuiltEventView& event)
                 }
             }
         }
-        if (mod == 2) {
+        if (mod == 0) {
             for (size_t j = 0; j < event.Size(); ++j) {
-                if (event.Mod[j] == 2 && i != j) {
+                if (event.Mod[j] == 0 && i != j) {
                     H.hSectSect->Fill(ch, event.Ch[j]);
                 }
             }

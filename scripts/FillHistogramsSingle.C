@@ -82,28 +82,28 @@ void FillHistogramsSingle(const char* infilename, const char* outfilename = "")
         for (size_t i = 0; i < Mod->size(); ++i) {
             mod_ch_adc_ts->Fill(Mod->at(i), Ch->at(i), Adc->at(i));
 
-            if (Mod->at(i) == 2) {
+            if (Mod->at(i) == 0) {
                 mod1_ch_adc->Fill(Ch->at(i), Adc->at(i));
             }
             if (Mod->at(i) == 1) {
                 mod2_ch_adc->Fill(Ch->at(i), Adc->at(i));
                 for (size_t j = 0; j < Mod->size(); ++j) {
-                    if (Mod->at(j) == 2) {
+                    if (Mod->at(j) == 0) {
                         double dT = static_cast<double>(Ts->at(i)) - static_cast<double>(Ts->at(j));
                         siall->Fill(Ch->at(j), Ch->at(i));
                         ring_sector_E->Fill(Adc->at(j), Adc->at(i));
                         sector_ring_energy_double->Fill(static_cast<double>(Adc->at(j)), static_cast<double>(Adc->at(i)));
 
-                        if (Ch->at(i) != 11 && Ch->at(i) != 16 && Ch->at(i) != 17 && Ch->at(i) != 18) {
+                        //if (Ch->at(i) != 11 && Ch->at(i) != 16 && Ch->at(i) != 17 && Ch->at(i) != 18) {
                             ring_sector_E_reduced->Fill(Adc->at(j), Adc->at(i));
                             sidt->Fill(dT);
-                        }
+                        //}
 
                         if (dT > -100.0 && dT < 100.0) {
                             pmpt_ring_sector_E->Fill(Adc->at(j), Adc->at(i));
-                            if (Ch->at(i) != 11 && Ch->at(i) != 16 && Ch->at(i) != 17 && Ch->at(i) != 18) {
+                          //  if (Ch->at(i) != 11 && Ch->at(i) != 16 && Ch->at(i) != 17 && Ch->at(i) != 18) {
                                 pmpt_ring_sector_E_reduced->Fill(Adc->at(j), Adc->at(i));
-                            }
+                          //  }
 
                             if (Adc->at(i) != 0) {
                                 hSectE_divRingE->Fill(static_cast<double>(Adc->at(j)) / static_cast<double>(Adc->at(i)));
@@ -115,12 +115,12 @@ void FillHistogramsSingle(const char* infilename, const char* outfilename = "")
 
                             if (Adc->at(i) > 120 && Adc->at(j) > 120) {
                                 for (size_t k = 0; k < Mod->size(); ++k) {
-                                    if (Mod->at(k) == 3 && Ch->at(k) > 7) {
+                                    if (Mod->at(k) == 2 ) {
                                         double dT_sect_cdte = static_cast<double>(Ts->at(j)) - static_cast<double>(Ts->at(k));
                                         hSect_CdTe_dT->Fill(dT_sect_cdte);
                                         hSect_CdTe_dT_ADC->Fill(dT_sect_cdte, Adc->at(k));
                                     }
-                                    if (Mod->at(k) == 4) {
+                                    if (Mod->at(k) == 3) {
                                         double dT_sect_hpge = static_cast<double>(Ts->at(j)) - static_cast<double>(Ts->at(k));
                                         hSect_HPGe_dT->Fill(dT_sect_hpge);
                                         hSect_HPGe_dT_ADC->Fill(dT_sect_hpge, Adc->at(k));
@@ -136,18 +136,18 @@ void FillHistogramsSingle(const char* infilename, const char* outfilename = "")
                 }
             }
 
-            if (Mod->at(i) == 2) {
+            if (Mod->at(i) == 0) {
                 for (size_t j = 0; j < Mod->size(); ++j) {
-                    if (Mod->at(j) == 2 && i != j) {
+                    if (Mod->at(j) == 0 && i != j) {
                         hSectSect->Fill(Ch->at(i), Ch->at(j));
                     }
                 }
             }
 
-            if (Mod->at(i) == 3) {
+            if (Mod->at(i) == 2) {
                 mod3_ch_adc->Fill(Ch->at(i), Adc->at(i));
             }
-            if (Mod->at(i) == 4) {
+            if (Mod->at(i) == 3) {
                 mod4_ch_adc->Fill(Ch->at(i), Adc->at(i));
             }
         }

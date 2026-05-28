@@ -29,6 +29,7 @@ struct HistogramGateRefs {
     const TGraph* betabeam = nullptr;
     double cdteS3up = 100, cdteS3down = -100;
     double hpgeS3up = 100, hpgeS3down = -100;
+    double pixelcut = 5;
 };
 
 void FillHistograms(HistogramRefs& H, const BuiltEventView& event);

@@ -41,8 +41,8 @@ JAEASortIO input syntax
   digitiser timestamp offsets:
     -TOffN offset
       Applies `offset` to every timestamp read from module `N`.
-      Example: `-TOff4 4000`
-      Offsets may be negative.
+      Example: `-TOff4 400`
+      Offsets may be negative. Given in ns
       Applied before event building. Use cal file for small individual channel adjustments
   numeric options:
     -OptionName value
@@ -77,3 +77,7 @@ JAEASortIO input syntax
       When set non-zero, only the detector-class-free basic histograms are created and filled.
     -HistogramTimers 0|1
       When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.
+
+    Time Units Note
+      While the event building and TTree are in time stamp 10ns ticks,
+      all user inputs, and detector classes, have been convered to ns for ease.

@@ -17,31 +17,10 @@
 #   HPGe LaBr SiDeltaE Si SiDeltaE_B Si_B Solar Dice CdTe S3Ring S3Sector
 #
 
-# input PreviousCalibration.cal
-output InitialCalFile.cal
+input Cal6.cal
+output Time.cal
 
-range_index 0 0 31 0
-range_toff 0 0 31 -10
-toff 0 25 -30
-toff 0 30 -20
-toff 0 31 -20
+# Ring preamp 1
+range_toff 1 0 12 -20
 
-range_type 1 0 11 S3Ring
-range_index 1 0 11 12
-range_cal 1 0 11 0 1.325 0
-range_toff 1 0 11 0
-
-range_type 1 16 27 S3Ring
-range_index 1 16 27 0
-range_toff 1 16 27 -10
-
-range_type 2 0 15 CdTe
-range_index 2 0 15 0
-range_toff 2 0 15 600
-range_toff 3 0 15 600
-
-type 3 0 HPGe
-index 3 0 0
-
-type 3 3 HPGe
-index 3 3 1
+# toff 0 25 -30

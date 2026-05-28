@@ -51,7 +51,7 @@ DetHit::DetHit(Double_t tTS,UShort_t tC, UShort_t tMod, UShort_t tChan)
     fType = cal.DetectorType;
     fIndex = cal.Index;
     fTOff = cal.TOff;
-    fTime = fTimeStamp - fTOff;
+    fTime = fTimeStamp*10.0 - fTOff;
 
     fEnergy = fCharge + gThRand().Uniform();
     fEnergy = cal.p0 + fEnergy * cal.p1 + fEnergy * fEnergy * cal.p2;

@@ -649,8 +649,10 @@ void JAEASortIO::ProcessOption(TString str){
 
             int offset = 0;
             *this >> offset;
+            offset/=10;
             SetModuleTimeOffset(module, offset);
-            std::cout << "TOff[" << module << "] : " << offset << std::endl;
+            std::cout << "TOff[" << module << "] : " << offset*10 << " ns, " << offset << " ticks" << std::endl;
+
         }else if(str.EqualTo("-id") || str.EqualTo("-gr")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name

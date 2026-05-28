@@ -192,7 +192,7 @@ public:
         ev.ts  = ev.ts << 12;
         ev.ts += ((Long64_t)(Dbuf[1] & 0xFFFF) << 16);
         ev.ts += ((Long64_t)(Dbuf[2]));
-        ev.ts *= 10;
+        // ev.ts *= 10;
 
         ev.ch  = (Dbuf[3] & 0x001F);
         ev.adc = (Dbuf[4] & 0x1FFF);
@@ -231,7 +231,7 @@ public:
         ev.ts  = ev.ts << 12;
         ev.ts += ((Long64_t)(Dbuf[1] & 0xFFFF) << 16);
         ev.ts += ((Long64_t)(Dbuf[2]));
-        ev.ts *= 10;
+        // ev.ts *= 10;
 
         ev.ch  = (Dbuf[3] & 0x000F);
         ev.adc = (Dbuf[4] & 0x3FFF);

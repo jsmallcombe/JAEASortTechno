@@ -51,6 +51,7 @@ inline UShort_t SafeTsDiff(Long64_t ts, Long64_t firstTs)
 // =========================
 struct BuiltEvent {
     std::vector<UShort_t> Ts;
+    std::vector<Long64_t> Ts_l; // Absolute ts for diagnostics
     std::vector<UShort_t> Mod;
     std::vector<UShort_t> Ch;
     std::vector<UShort_t> Adc;
@@ -82,6 +83,7 @@ struct BuiltEvent {
         Mod.clear();
         Ch.clear();
         Adc.clear();
+        Ts_l.clear();
     }
 
     bool Empty() const
@@ -101,6 +103,7 @@ struct BuiltEvent {
         Mod.push_back(ev.mod);
         Ch.push_back(ev.ch);
         Adc.push_back(ev.adc);
+        Ts_l.push_back(ev.ts);
         return IsTrigger(ev);
     }
 
@@ -110,6 +113,7 @@ struct BuiltEvent {
         Mod.push_back(ev.mod);
         Ch.push_back(ev.ch);
         Adc.push_back(ev.adc);
+        Ts_l.push_back(ev.ts);
         return IsTrigger(ev);
     }
 };

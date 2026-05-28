@@ -184,6 +184,7 @@ bool S3Det::EnergyMatches(double ringEnergy, double sectorEnergy) const
 {
     return (ringEnergy - fFrontBackOffset) * fFrontBackEnergy < sectorEnergy &&
            (sectorEnergy - fFrontBackOffset) * fFrontBackEnergy < ringEnergy;
+   // return (double)ringEnergy/(double)sectorEnergy > 0.8 || (double)ringEnergy/(double)sectorEnergy < 1.2;
 }
 
 void S3Det::AddPixel(const DetHit* ring, const DetHit* sector, const DetHit* primary)
@@ -204,9 +205,9 @@ void S3Det::BuildHits()
     // To enable multi-hit reconstruction, use SetMultiHit.
 
     // If the pixels have been reset (or never set), clear the pixel hits first.
-    if(fPixelsBuilt) {
-        return;
-    }
+    //if(fPixelsBuilt) {
+    //    return;
+    //}
 
     fHits.clear();
 
