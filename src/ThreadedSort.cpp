@@ -103,7 +103,8 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                       Long64_t tdiff,
                       int CHUNK,
                       int BufferSize,
-                      DigitiserAdcHistograms* ADChists = nullptr)
+                      DigitiserAdcHistograms* ADChists = nullptr,
+                      Long64_t maxSortTs = -1)
 {
     const size_t CHUNK_SIZE = CHUNK;
     const size_t BUFFER_TARGET = BufferSize;
@@ -133,7 +134,8 @@ int ThreadedBinToTree(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                               [&](BuiltEvent&) {
                                   outtree->Fill();
                               },
-                              ADChists);
+                              ADChists,
+                              maxSortTs);
     std::cout << "\n[SORT DEBUG] BuildEventsFromDigitisers returned"
               << " | read=" << g_ReadCount.load()
               << " built=" << g_BuiltCount.load()
@@ -158,7 +160,8 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       int CHUNK,
                                       int BufferSize,
                                       TString treeOutfilename,
-                                      Long64_t histChunkEvents)
+                                      Long64_t histChunkEvents,
+                                      Long64_t maxSortTs)
 {
     ROOT::EnableThreadSafety();
 
@@ -235,7 +238,8 @@ int MakeEventTreeAndHistogramsFromBin(std::vector<std::unique_ptr<DigitiserBase>
                                       chunkBuffer = CreateBuiltEventChunkBuffer(treeEvent);
                                   }
                               },
-                              nullptr);
+                              nullptr,
+                              maxSortTs);
     std::cout << "\n[SORT DEBUG] BuildEventsFromDigitisers returned"
               << " | read=" << g_ReadCount.load()
               << " built=" << g_BuiltCount.load()
@@ -311,7 +315,8 @@ void MakeEventTreeFromBin(TString infilename,
                           Long64_t tdiff,
                           int CHUNK,
                           int BufferSize,
-                          Long64_t TS_TOLERANCE)
+                          Long64_t TS_TOLERANCE,
+                          Long64_t maxSortTs)
 {
     std::vector<std::unique_ptr<DigitiserBase>> digitisers = BuildDigitiserList(infilename);
 
@@ -327,7 +332,7 @@ void MakeEventTreeFromBin(TString infilename,
         return;
     }
 
-    ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize);
+    ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize, nullptr, maxSortTs);
     WriteAndCloseTreeOutput(treeOutput);
 }
 
@@ -365,7 +370,8 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  int CHUNK,
                  int BufferSize,
                  Long64_t TS_TOLERANCE,
-                 Long64_t histChunkEvents)
+                 Long64_t histChunkEvents,
+                 Long64_t maxSortTs)
 {
     if (!writeTree && !doHistSort) {
         return 0;
@@ -390,7 +396,7 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
             return 5;
         }
 
-        ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize, &ADChists);
+        ThreadedBinToTree(digitisers, treeOutput.tree, tdiff, CHUNK, BufferSize, &ADChists, maxSortTs);
         WriteAndCloseTreeOutput(treeOutput);
         WriteAdcHistogramsToFile(eventTreeOutfilename, ADChists);
         return 0;
@@ -403,5 +409,6 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                                              CHUNK,
                                              BufferSize,
                                              writeTree ? eventTreeOutfilename : "",
-                                             histChunkEvents);
+                                             histChunkEvents,
+                                             maxSortTs);
 }

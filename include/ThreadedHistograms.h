@@ -42,7 +42,10 @@
     X(TH2F, cdte_chan_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1500, 0, 300) \
     X(TH1F, cdte_doppler, "gammas", "CdTe Doppler-corrected energy;Energy [keV]", 1500, 0, 300) \
     X(TH1F, cdte_doppler_bg, "gammas", "Background CdTe Doppler-corrected energy;Energy [keV]", 1500, 0, 300) \
+    X(TH1F, cdte_corrected, "gammas", "Time Corrected CdTe Energy;Energy [keV]", 1500, 0, 300) \
+    X(TH1F, cdte_corrected_doppler, "gammas", "Time Corrected CdTe Doppler Energy;Energy [keV]", 1500, 0, 300) \
     X(TH2F, cdte_ring_doppler, "gammas", "S3 ring vs CdTe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 1500, 0, 300) \
+    X(TH2F, cdte_ring_doppler_back, "gammas", "S3 ring vs CdTe Doppler-corrected energy Background;Ring;Energy [keV]", 24, -0.5, 23.5, 1500, 0, 300) \
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
     X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_energy_S3, "gammas", "HPGe summed energy (S3 gated);Energy [keV]", 4000, 0, 2000) \

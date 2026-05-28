@@ -10,6 +10,8 @@
 
 using XYZVector = ROOT::Math::XYZVector;
 
+double DopplerCorrectEnergy(double energyKeV, double angleRad, double beta);
+
 class DetPos {
 protected:
     mutable bool fPosSet{false};

@@ -28,7 +28,11 @@ struct HistogramGateRefs {
     const TGraph* beta = nullptr;
     const TGraph* betabeam = nullptr;
     double cdteS3up = 100, cdteS3down = -100;
+    double cdteS3backup = 100, cdteS3backdown = -100;
+    double cdteS3tzero = 0, cdtekevns = -0.5,  cdteezero = 120;
     double hpgeS3up = 100, hpgeS3down = -100;
+    double hpgeS3backup = 100, hpgeS3backdown = -100;
+
     double pixelcut = 5;
 };
 

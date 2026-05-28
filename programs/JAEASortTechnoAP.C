@@ -30,6 +30,7 @@ int main(int argc, char** argv)
     int BufferSize = gIO->GetInput("BuildBuffer", gBuildBuffDefaultSize);
     Long64_t TsTolerance = gIO->GetInput("Tolerance", gTS_TOLERANCE*10)/10;
     Long64_t HistChunkEvents = gIO->GetInput("HistChunks", gHistChunkDefaultEvents);
+    Long64_t MaxSortTs =  gIO->GetInput("MaxTs", -1);
     const bool BasicHistograms = gIO->GetBoolInput("BasicHistograms", false);
     const bool HistogramTimers = gIO->GetBoolInput("HistogramTimers", false);
     std::vector<UShort_t> triggerModules;
@@ -60,6 +61,9 @@ int main(int argc, char** argv)
     }
     if (gIO->TestInput("HistChunks")) {
         std::cout << "Histogram chunk event target overridden: " << HistChunkEvents << std::endl;
+    }
+    if (MaxSortTs>-1) {
+        std::cout << "Maximum sorting timestamp enabled: " << MaxSortTs << " ticks" << std::endl;
     }
     if (BasicHistograms) {
         std::cout << "Basic histogram mode enabled: detector histograms will not be created or filled" << std::endl;
@@ -96,7 +100,8 @@ int main(int argc, char** argv)
                               ChunkSize,
                               BufferSize,
                               TsTolerance,
-                              HistChunkEvents);
+                              HistChunkEvents,
+                              MaxSortTs);
     } else if (ReadTree) {
         timer.Start();
         ranSort = true;

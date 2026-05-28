@@ -28,11 +28,13 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                                size_t CHUNK_SIZE,
                                BuiltEvent& eventBuffer,
                                EventWriter&& writeEvent,
-                               DigitiserAdcHistograms* ADChists = nullptr)
+                               DigitiserAdcHistograms* ADChists = nullptr,
+                               Long64_t maxSortTs = -1)
 {
     const Long64_t COINC_WINDOW = tdiff;
     const size_t BUFFER_TARGET = BUFFER;
     const size_t REFILL_TARGET = std::max<size_t>(1, BUFFER / gBuildRefillDivisor);
+    const bool hasMaxSortTs = maxSortTs >= 0;
 
     struct RefillSlot {
         std::vector<Event> events;
@@ -107,12 +109,17 @@ void BuildEventsFromDigitisers(std::vector<std::unique_ptr<DigitiserBase>>& digi
                         accepted = true;
                     }
 
+                    if (hasMaxSortTs && globalMaxTs > maxSortTs) {
+                        inputFinished = true;
+                        break;
+                    }
+
                     if (added >= targetSize && accepted) {
                         break;
                     }
                 }
 
-                if (added >= targetSize) {
+                if (added >= targetSize || inputFinished) {
                     break;
                 }
             }

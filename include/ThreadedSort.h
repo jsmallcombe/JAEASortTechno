@@ -25,7 +25,8 @@ void MakeEventTreeFromBin(TString infilename,
                         Long64_t tdiff=gTS_Diff,
                         int CHUNK = gBinChunkDefaultSize,
                         int BufferSize=gBuildBuffDefaultSize,
-                        Long64_t TS_TOLERANCE = gTS_TOLERANCE);
+                        Long64_t TS_TOLERANCE = gTS_TOLERANCE,
+                        Long64_t maxSortTs = -1);
 
 // High-level threaded histogram sort for an existing EventTree/TChain input.
 // Reads built events from ROOT rather than raw bin data and writes only the
@@ -49,7 +50,8 @@ int ThreadedSort(std::vector<std::unique_ptr<DigitiserBase>>& digitisers,
                  int CHUNK = gBinChunkDefaultSize,
                  int BufferSize = gBuildBuffDefaultSize,
                  Long64_t TS_TOLERANCE = gTS_TOLERANCE,
-                 Long64_t histChunkEvents = gHistChunkDefaultEvents);
+                 Long64_t histChunkEvents = gHistChunkDefaultEvents,
+                 Long64_t maxSortTs = -1);
 
     
 

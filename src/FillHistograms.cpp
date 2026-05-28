@@ -129,8 +129,17 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
 
             gateRefs.cdteS3up = gIO->GetInput("CdTeS3Up", 100);
             gateRefs.cdteS3down = gIO->GetInput("CdTeS3Down", -100);
+            gateRefs.cdteS3backup = gIO->GetInput("CdTeS3BackUp", gateRefs.cdteS3up+1500);
+            gateRefs.cdteS3backdown = gIO->GetInput("CdTeS3BackDown", gateRefs.cdteS3down)+1500;
+
+            gateRefs.cdteS3tzero = gIO->GetInput("CdTeS3TZero", 0);
+            gateRefs.cdtekevns = gIO->GetInput("CdTeKeVns", -1);
+            gateRefs.cdteezero = gIO->GetInput("CdTeEZero", 120);
+
             gateRefs.hpgeS3up = gIO->GetInput("HpGeS3Up", 100);
             gateRefs.hpgeS3down = gIO->GetInput("HpGeS3Down", -100);
+            gateRefs.hpgeS3backup = gIO->GetInput("HPGeS3BackUp", gateRefs.hpgeS3up+1500);
+            gateRefs.hpgeS3backdown = gIO->GetInput("HPGeS3BackDown", gateRefs.hpgeS3down)+1500;
 
             gateRefs.pixelcut = gIO->GetInput("PixelCutE", 5);
         }
@@ -360,7 +369,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                     }
                 }//cdte.hpge
             }//s3.hpge.dt
-            if(dT > (gates.hpgeS3down + 1500) && dT < (gates.hpgeS3up + 1500)){
+            if(dT > (gates.hpgeS3backdown) && dT < (gates.hpgeS3backup)){
                 H.hpge_energy_S3_bg->Fill(hit.Energy());
                 H.hpge_doppler_bg->Fill(dopplerEnergy);
                 H.hpge_doppler_Beam_bg->Fill(dopplerEnergyBeam);
@@ -370,20 +379,27 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
         for(auto& cdteHit : cdte) {
             const double dT = cdteHit.Time() - s3Time;
+            const double cdteEnergy = cdteHit.Energy();
+
             H.cdte_S3time->Fill(dT);
             H.cdte_S3time_w->Fill(dT);
             H.cdte_chan_S3time->Fill(cdteHit.Index(), dT);
             H.cdte_chan_S3time_w->Fill(cdteHit.Index(), dT);
-            if(cdteHit.Index()<16) H.CdTeS3TimeEnergy[cdteHit.Index()]->Fill(dT,cdteHit.Energy());
+            if(cdteHit.Index()<16) H.CdTeS3TimeEnergy[cdteHit.Index()]->Fill(dT,cdteEnergy);
             const XYZVector gammaPos = cdteHit.Pos(true);
             const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos);
             const double dopplerEnergy = cdteHit.DopplerCorrectedEnergy(openingAngle, beta);
             const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
             const double dopplerEnergyBeam = cdteHit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
-            H.CdTeES3dT->Fill(dT,cdteHit.Energy());
+            H.CdTeES3dT->Fill(dT,cdteEnergy);
             H.CdTeES3dTDopp->Fill(dT,dopplerEnergy);
+
             if(dT > gates.cdteS3down && dT < gates.cdteS3up) {
-                const double cdteEnergy = cdteHit.Energy();
+
+                double realignedE=cdteEnergy+(((dT-gates.cdteS3tzero)*gates.cdtekevns)*(cdteEnergy/gates.cdteezero));
+                double dopplerrealignedE=DopplerCorrectEnergy(realignedE,openingAngle, beta);
+                H.cdte_corrected->Fill(realignedE);
+                H.cdte_corrected_doppler->Fill(dopplerrealignedE);
 
                 H.gamma_positions->Fill(gammaPos.Z(), gammaPos.X(), gammaPos.Y());
                 H.cdte_S3time_g->Fill(dT);
@@ -393,6 +409,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.cdte_energy_S3->Fill(cdteEnergy);
                 H.cdte_doppler->Fill(dopplerEnergy);
                 H.cdte_ring_doppler->Fill(s3Ring, dopplerEnergy);
+    
                 H.cdte_doppler_beam->Fill(dopplerEnergyBeam);
                 H.cdte_ring_doppler_beam->Fill(s3Ring, dopplerEnergyBeam);
                 H.CdTeKin->Fill(openingAngle * TMath::RadToDeg(), cdteEnergy);
@@ -407,6 +424,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 for(const HPGeHit* hpgeHit : gatedHpgeHits) {
                     H.cdte_hpge_S3->Fill(cdteEnergy, hpgeHit->Energy());
                 }//s3.cdte.dt.hpge
+
                 for(auto&& hpgeHit : hpge) {
                     const double dTcg = cdteHit.Time() - hpgeHit.Time();
                     const XYZVector gammaPos2 = hpgeHit.Pos(true);
@@ -417,16 +435,12 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                     }//cdte.hpge.dt
                 }//cdte.hpge
             }//s3.cdte.dt
-            if(dT > (gates.cdteS3down + 1500) && dT < (gates.cdteS3up + 1500)){
-                const double cdteEnergy = cdteHit.Energy();
+            
+            if(dT > (gates.cdteS3backdown) && dT < (gates.cdteS3backup )){
 
-                const XYZVector gammaPos = cdteHit.Pos(true);
-                const double openingAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, gammaPos);
-                const double dopplerEnergy = cdteHit.DopplerCorrectedEnergy(openingAngle, beta);
-                const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
-                const double dopplerEnergyBeam = cdteHit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
                 H.cdte_energy_S3_bg->Fill(cdteEnergy);
                 H.cdte_doppler_bg->Fill(dopplerEnergy);
+                H.cdte_ring_doppler_back->Fill(s3Ring, dopplerEnergy);
 
             }
         }//s3.cdte

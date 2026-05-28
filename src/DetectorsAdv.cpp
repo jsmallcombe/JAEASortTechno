@@ -7,6 +7,7 @@
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;
+}
 
 double DopplerCorrectEnergy(double energyKeV, double angleRad, double beta)
 {
@@ -16,7 +17,6 @@ double DopplerCorrectEnergy(double energyKeV, double angleRad, double beta)
 
     const double gamma = 1.0 / std::sqrt(1.0 - beta * beta);
     return energyKeV * gamma * (1.0 - beta * std::cos(angleRad));
-}
 }
 
 bool S3Det::fPreferSector = false;

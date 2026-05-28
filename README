@@ -68,6 +68,11 @@ JAEASortIO input syntax
       Timestamp ordering tolerance forwarded to the digitiser readers.
     -HistChunks N
       Built-event count per histogram chunk in the direct bin->hist path.
+    -MaxTs ticks
+      Optional maximum timestamp for raw digitiser sorting, given in raw
+      timestamp ticks to match timestamp disorder messages. When globalMaxTs
+      surpasses this value, digitiser buffer filling stops and final events are
+      drained normally.
     -TriggerModule N
       Repeatable. When provided, only built events containing at least one
       hit from one of these module numbers are written.
