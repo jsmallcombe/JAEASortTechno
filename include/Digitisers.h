@@ -176,10 +176,18 @@ public:
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
-        if(filei){
-            name.Form("%s_000000_%d-%011d.bin",rn.Data(), fmodl, filei);
-        }else{ 
-            name.Form("%s_000000_%d.bin", rn.Data(), fmodl);
+        if(fmodl>0){
+            if(filei){
+                name.Form("%s_000000_%d-%011d.bin",rn.Data(), fmodl, filei);
+            }else{ 
+                name.Form("%s_000000_%d.bin", rn.Data(), fmodl);
+            }
+        }else{
+            if(filei){
+                name.Form("%s_000000-%011d.bin",rn.Data(), filei);
+            }else{ 
+                name.Form("%s_000000.bin", rn.Data());
+            }
         }
         return name;
     }
@@ -215,10 +223,18 @@ public:
 
     static TString buildFileName(TString rn,int fmodl,int filei) {
         TString name;
-        if(filei){
-            name.Form("%s_Ge_000000_%d-%011d.bin",rn.Data(), fmodl, filei);
-        }else{ 
-            name.Form("%s_Ge_000000_%d.bin", rn.Data(), fmodl);
+        if(fmodl>0){
+            if(filei){
+                name.Form("%s_Ge_000000_%d-%011d.bin",rn.Data(), fmodl, filei);
+            }else{ 
+                name.Form("%s_Ge_000000_%d.bin", rn.Data(), fmodl);
+            }
+        }else{
+            if(filei){
+                name.Form("%s_Ge_000000-%011d.bin",rn.Data(), filei);
+            }else{ 
+                name.Form("%s_Ge_000000.bin", rn.Data());
+            }
         }
         return name;
     }

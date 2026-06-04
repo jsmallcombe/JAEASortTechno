@@ -116,25 +116,51 @@ BuildDigitiserList(const TString& runName)
         digitisers.push_back(std::make_unique<APV8104>(runName,moduleIndex));
     }
     //APV8032
-    for (int fmodl = 1; fmodl <= 5; ++fmodl) {
-        // Check existence (kFALSE = exists and accessible)
-        if (!gSystem->AccessPathName(APV8032::buildFileName(runName, fmodl, 0))) {
-            // Construct only if file exists
-            int moduleIndex = digitisers.size();
-            if(APV8032::ModuleZeroIndex>=0) moduleIndex = APV8032::ModuleZeroIndex + fmodl - 1; 
-            std::cout<<"Added APV8032_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
-            digitisers.push_back(std::make_unique<APV8032>(runName,moduleIndex, fmodl));
+    for (int fmodl = 0; fmodl <= 5; ++fmodl) {
+        if(fmodl>0){
+            // Check existence (kFALSE = exists and accessible)
+            if (!gSystem->AccessPathName(APV8032::buildFileName(runName, fmodl, 0))) {
+                // Construct only if file exists
+                int moduleIndex = digitisers.size();
+                if(APV8032::ModuleZeroIndex>=0) moduleIndex = APV8032::ModuleZeroIndex + fmodl - 1; 
+                std::cout<<"Added APV8032_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
+                digitisers.push_back(std::make_unique<APV8032>(runName,moduleIndex, fmodl));
+            }
+        }else if(fmodl==0){
+            // Check existence (kFALSE = exists and accessible)
+            if (!gSystem->AccessPathName(APV8032::buildFileName(runName, 0, 0))) {
+                // Construct only if file exists
+                int moduleIndex = digitisers.size();
+                if(APV8032::ModuleZeroIndex>=0) moduleIndex = APV8032::ModuleZeroIndex; 
+                // In the case of multiple they are index from fmodl==1, but if only 1 module, fmodl==0
+                std::cout<<"Added APV8032_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
+                digitisers.push_back(std::make_unique<APV8032>(runName,moduleIndex, fmodl));
+                // File corresponding to fmodl==0 should ONLY exist for runs with a single card of this type
+                break;
+            }
         }
     }
     //APV8016A
-    for (int fmodl = 1; fmodl <= 5; ++fmodl) {
-        // Check existence (kFALSE = exists and accessible)
-        if (!gSystem->AccessPathName(APV8016A::buildFileName(runName, fmodl, 0))) {
-            // Construct only if file exists
-            int moduleIndex = digitisers.size();
-            if(APV8016A::ModuleZeroIndex>=0) moduleIndex = APV8016A::ModuleZeroIndex + fmodl - 1;
-            std::cout<<"Added APV8016A_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
-            digitisers.push_back(std::make_unique<APV8016A>(runName,moduleIndex,fmodl));
+    for (int fmodl = 0; fmodl <= 5; ++fmodl) {
+        if(fmodl>0){
+            // Check existence (kFALSE = exists and accessible)
+            if (!gSystem->AccessPathName(APV8016A::buildFileName(runName, fmodl, 0))) {
+                // Construct only if file exists
+                int moduleIndex = digitisers.size();
+                if(APV8016A::ModuleZeroIndex>=0) moduleIndex = APV8016A::ModuleZeroIndex + fmodl - 1;
+                std::cout<<"Added APV8016A_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
+                digitisers.push_back(std::make_unique<APV8016A>(runName,moduleIndex,fmodl));
+            }
+        }else if(fmodl==0){
+            if (!gSystem->AccessPathName(APV8016A::buildFileName(runName, 0, 0))) {
+                // Construct only if file exists
+                int moduleIndex = digitisers.size();
+                if(APV8016A::ModuleZeroIndex>=0) moduleIndex = APV8016A::ModuleZeroIndex;
+                std::cout<<"Added APV8016A_"<<fmodl<<" as module "<<moduleIndex<<std::endl;
+                digitisers.push_back(std::make_unique<APV8016A>(runName,moduleIndex,fmodl));
+                // File corresponding to fmodl==0 should ONLY exist for runs with a single card of this type
+                break;
+            }
         }
     }
     
