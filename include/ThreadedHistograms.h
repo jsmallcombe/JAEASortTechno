@@ -56,6 +56,9 @@
     X(TH1F, hpge_doppler_Beam, "gammas", "HPGe Beam Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_doppler_Beam_bg, "gammas", "Background HPGe Beam Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
     X(TH2F, hpge_ring_doppler, "gammas", "S3 ring vs HPGe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
+    X(TH2F, hpge_ring_doppler_bg, "gammas", "BG S3 ring vs HPGe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
+    X(TH2F, hpge_ring_doppler_Beam, "gammas", "S3 ring vs HPGe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
+    X(TH2F, hpge_ring_doppler_Beam_bg, "gammas", "BG S3 ring vs HPGe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
     X(TH3F, gamma_positions, "gammas", "Gamma detector hit positions;Z;X;Y", 400, -100, 100, 400, -100, 100, 400, -100, 100) \
     X(TH1F, cdte_S3time, "gammaT", "S3-CdTe time;Time", 400, -2000, 2000) \
     X(TH1F, cdte_S3time_g, "gammaT", "S3-CdTe time;Time", 400, -2000, 2000) \
@@ -79,6 +82,7 @@
     X(TH2F, HPGeKinBeam, "kinematics", "HPGe energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Lab Energy [keV]", 180,0,180,2000,0,2000)\
     X(TH2F, HPGeKinDopp, "kinematics", "HPGe doppler energy vs target/gamma angle;Angle Target-Gamma;Gamma Energy Target [keV]", 180,0,180,2000,0,2000)\
     X(TH2F, HPGeKinBeamDopp, "kinematics", "HPGe doppler energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Beam [keV]", 180,0,180,2000,0,2000)\
+    X(TH2F, HPGeKinBeamDopp_bg, "kinematics", "BG HPGe doppler energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Beam [keV]", 180,0,180,2000,0,2000)\
     X(TH2F, CdTeKin, "kinematics", "CdTe energy vs target/gamma angle;Angle Target-Gamma;Gamma Energy Lab [keV]", 180,0,180,2000,0,500)\
     X(TH2F, CdTeKinBeam, "kinematics", "CdTe energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Lab Energy [keV]", 180,0,180,2000,0,500)\
     X(TH2F, CdTeKinDopp, "kinematics", "CdTe doppler energy vs target/gamma angle;Angle Target-Gamma;Gamma Energy Target [keV]", 180,0,180,2000,0,500)\

@@ -127,6 +127,21 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
             gateRefs.beta = gIO->GetGateConst(1);
             gateRefs.betabeam = gIO->GetGateConst(2);
 
+            gateRefs.invkinl = new TGraph();
+            gateRefs.betal = new TGraph();
+            gateRefs.betabeaml = new TGraph();
+
+            for(int i=0;i<10000;i++){
+                double theta=i*TMath::Pi()/10000.;
+                gateRefs.invkinl->SetPoint(gateRefs.invkinl->GetN(),theta,ThetaTarg_FromThetaBeam(theta));
+                gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Beam(theta));
+                gateRefs.betabeaml->SetPoint(gateRefs.betabeaml->GetN(),theta,CalcBeta_Target(theta));
+            }
+            gateRefs.invkinSp=TSpline3("invkinSp",gateRefs.invkinl);
+            gateRefs.betaSp=TSpline3("betaSp",gateRefs.betal);
+            gateRefs.betabeamSp=TSpline3("betabeamSp",gateRefs.betabeaml);
+
+
             gateRefs.cdteS3up = gIO->GetInput("CdTeS3Up", 100);
             gateRefs.cdteS3down = gIO->GetInput("CdTeS3Down", -100);
             gateRefs.cdteS3backup = gIO->GetInput("CdTeS3BackUp", gateRefs.cdteS3up+1500);
@@ -140,7 +155,6 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
             gateRefs.hpgeS3down = gIO->GetInput("HpGeS3Down", -100);
             gateRefs.hpgeS3backup = gIO->GetInput("HPGeS3BackUp", gateRefs.hpgeS3up+1500);
             gateRefs.hpgeS3backdown = gIO->GetInput("HPGeS3BackDown", gateRefs.hpgeS3down)+1500;
-
             gateRefs.pixelcut = gIO->GetInput("PixelCutE", 5);
         }
         initialized = true;
@@ -282,10 +296,12 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         const XYZVector pos = s3hit.Pos(true);
         H.s3_pixel_theta_energy->Fill(pos.Theta(), s3Energy);
         XYZVector s3KinPos = pos;
-        const double betaBeam = CalcBeta_Beam(pos.Theta());
-        const double beta = CalcBeta_Target(pos.Theta());
+        // const double betaBeam = CalcBeta_Beam(pos.Theta());
+        // const double beta = CalcBeta_Target(pos.Theta());
         //const double beta = gates.beta != nullptr ? gates.beta->Eval(pos.Theta()) : 0.0;
         //const double betaBeam = gates.betabeam != nullptr ? gates.betabeam->Eval(pos.Theta()) : 0.0;
+        const double beta = gates.betal != nullptr ? gates.betaSp.Eval(pos.Theta()) : 0.0;
+        const double betaBeam = gates.betabeaml != nullptr ? gates.betabeamSp.Eval(pos.Theta()) : 0.0;
 
         const DetHit* ring = s3hit.RingHit();
         const DetHit* sector = s3hit.SectorHit();
@@ -310,9 +326,14 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
         H.s3_pixel_position_xyz->Fill(pos.Z(), pos.X(), pos.Y());
 
-        if(gates.invkin){
-            const double theta = ThetaTarg_FromThetaBeam(pos.Theta());
+        // if(gates.invkin){
+            // const double theta = ThetaTarg_FromThetaBeam(pos.Theta());
             //const double theta = gates.invkin->Eval(pos.Theta());
+            // const double phi = pos.Phi() + TMath::Pi();
+            // s3KinPos = ROOT::Math::Polar3DVector(1.0, theta, phi);
+        // }
+        if(gates.invkinl){
+            const double theta = gates.invkinSp.Eval(pos.Theta());
             const double phi = pos.Phi() + TMath::Pi();
             s3KinPos = ROOT::Math::Polar3DVector(1.0, theta, phi);
         }
@@ -349,6 +370,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.hpge_doppler_Beam->Fill(dopplerEnergyBeam);
                 H.hpge_doppler_beam->Fill(dopplerEnergyBeam);
                 H.hpge_ring_doppler_beam->Fill(s3Ring, dopplerEnergyBeam);
+                H.hpge_ring_doppler_Beam->Fill(s3Ring, dopplerEnergyBeam);
                 H.HPGeKin->Fill(openingAngle * TMath::RadToDeg(), hit.Energy());
                 H.HPGeKinBeam->Fill(openingAngleBeam * TMath::RadToDeg(), hit.Energy());
                 H.HPGeKinDopp->Fill(openingAngle * TMath::RadToDeg(), dopplerEnergy);
@@ -373,6 +395,9 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.hpge_energy_S3_bg->Fill(hit.Energy());
                 H.hpge_doppler_bg->Fill(dopplerEnergy);
                 H.hpge_doppler_Beam_bg->Fill(dopplerEnergyBeam);
+                H.hpge_ring_doppler_bg->Fill(s3Ring, dopplerEnergy);
+                H.hpge_ring_doppler_Beam_bg->Fill(s3Ring, dopplerEnergyBeam);
+                H.HPGeKinBeamDopp_bg->Fill(openingAngleBeam * TMath::RadToDeg(), dopplerEnergyBeam);
             }
         }//s3.hpge
 
@@ -396,10 +421,12 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
             if(dT > gates.cdteS3down && dT < gates.cdteS3up) {
 
-                double realignedE=cdteEnergy+(((dT-gates.cdteS3tzero)*gates.cdtekevns)*(cdteEnergy/gates.cdteezero));
+                const double CorrT = dT-gates.cdteS3tzero;
+
+                double realignedE=cdteEnergy+((CorrT*gates.cdtekevns)*(cdteEnergy/gates.cdteezero));
                 double dopplerrealignedE=DopplerCorrectEnergy(realignedE,openingAngle, beta);
-                H.cdte_corrected->Fill(realignedE);
-                H.cdte_corrected_doppler->Fill(dopplerrealignedE);
+                if(abs(CorrT)<100)H.cdte_corrected->Fill(realignedE);
+                if(abs(CorrT)<100)H.cdte_corrected_doppler->Fill(dopplerrealignedE);
                 H.CdTeES3dTcorr->Fill(dT,realignedE);
                 H.CdTeES3dTDoppcorr->Fill(dT,dopplerrealignedE);
 

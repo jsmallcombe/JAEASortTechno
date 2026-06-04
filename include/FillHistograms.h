@@ -8,6 +8,8 @@
 
 class TGraph;
 
+#include <TSpline.h>
+
 struct DetHitScratch {
     std::vector<HPGeHit> hpge;
     std::vector<CdTeHit> cdte;
@@ -27,6 +29,12 @@ struct HistogramGateRefs {
     const TGraph* invkin = nullptr;
     const TGraph* beta = nullptr;
     const TGraph* betabeam = nullptr;
+    TGraph* invkinl = nullptr;
+    TGraph* betal = nullptr;
+    TGraph* betabeaml = nullptr;
+    TSpline3 invkinSp;
+    TSpline3 betaSp;
+    TSpline3 betabeamSp;
     double cdteS3up = 100, cdteS3down = -100;
     double cdteS3backup = 100, cdteS3backdown = -100;
     double cdteS3tzero = 0, cdtekevns = -0.5,  cdteezero = 120;

@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     const std::string inputFile = argv[1];
     std::string outputFile = argc > 2 ? argv[2] : "cal.txt";
 
-    PrintCommandSyntax();
+    // PrintCommandSyntax();
     std::cout << '\n';
 
     std::ifstream input(inputFile);
