@@ -400,6 +400,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 double dopplerrealignedE=DopplerCorrectEnergy(realignedE,openingAngle, beta);
                 H.cdte_corrected->Fill(realignedE);
                 H.cdte_corrected_doppler->Fill(dopplerrealignedE);
+                H.CdTeES3dTcorr->Fill(dT,realignedE);
+                H.CdTeES3dTDoppcorr->Fill(dT,dopplerrealignedE);
 
                 H.gamma_positions->Fill(gammaPos.Z(), gammaPos.X(), gammaPos.Y());
                 H.cdte_S3time_g->Fill(dT);

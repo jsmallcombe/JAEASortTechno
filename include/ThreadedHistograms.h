@@ -65,6 +65,8 @@
     X(TH2F, cdte_chan_S3time_gate, "gammaT", "CdTe Channel vs S3-CdTe time;Channel;Time", 16, -0.5, 15.5, 400, -2000, 2000) \
     X(TH2F, CdTeES3dT, "gammaT", "CdTe energy vs S3 dT", 800,-4000,4000,500,0,250)\
     X(TH2F, CdTeES3dTDopp, "gammaT", "CdTe Doppler energy vs S3 dT", 800,-4000,4000,500,0,250)\
+    X(TH2F, CdTeES3dTcorr, "gammaT", "CdTe energy vs S3 dT", 800,-4000,4000,500,0,250)\
+    X(TH2F, CdTeES3dTDoppcorr, "gammaT", "CdTe Doppler energy vs S3 dT", 800,-4000,4000,500,0,250)\
     X(TH1F, hpge_S3time, "gammaT", "S3-CdTe time;Time", 400, -2000, 2000) \
     X(TH1F, hpge_S3time_g, "gammaT", "S3-CdTe time;Time", 400, -2000, 2000) \
     X(TH1F, hpge_S3time_w, "gammaT", "S3-CdTe time;Time", 2000, -20000, 20000) \
