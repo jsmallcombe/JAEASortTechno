@@ -405,6 +405,26 @@ void CdTeHit::BuildPos() const
     fBlurPos = PosStatic(true, Index(), &fPos);
 }
 
+UShort_t CdTeHit::DetectorNumber() const
+{
+    return Index() / 4;
+}
+
+UShort_t CdTeHit::DetectorPixel() const
+{
+    return Index() % 4;
+}
+
+bool CdTeHit::IsNeighbour(const CdTeHit& other) const
+{
+    if(DetectorNumber() != other.DetectorNumber()) {
+        return false;
+    }
+
+    const int pixelDiff = std::abs(static_cast<int>(DetectorPixel()) - static_cast<int>(other.DetectorPixel()));
+    return pixelDiff == 1 || pixelDiff == 3;
+}
+
 Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
 {
     return DopplerCorrectEnergy(Energy(), angleRad, beta);

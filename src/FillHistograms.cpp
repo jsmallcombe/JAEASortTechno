@@ -203,6 +203,13 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.cdte_cdte->Fill(hitEnergy, hitbEnergy);
                 H.cdte_cdte->Fill(hitbEnergy, hitEnergy);
             }//cdte.cdte.dt
+            if(hit.IsNeighbour(hitb)) {
+                const double hitbEnergy = hitb.Energy();
+                const double addbackEnergy = hitEnergy + hitbEnergy;
+                H.cdte_addback_raw->Fill(addbackEnergy, hitEnergy);
+                H.cdte_addback_raw->Fill(addbackEnergy, hitbEnergy);
+                H.cdte_addback_time->Fill(dT, addbackEnergy);
+            }//cdte.addback
         }//cdte.cdte
 
         for(auto&& hpgeHit : hpge) {
@@ -282,6 +289,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
     std::vector<const HPGeHit*> gatedHpgeHits;
     gatedHpgeHits.reserve(hpge.size());
+    std::vector<const CdTeHit*> gatedCdTeHits;
+    gatedCdTeHits.reserve(cdte.size());
 
     for(auto& s3hit : s3.Hits()) {
         const UShort_t s3Sector = s3hit.Sector();
@@ -363,7 +372,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.gamma_positions->Fill(gammaPos.Z(), gammaPos.X(), gammaPos.Y());
 
                 H.hpge_chan_S3time_gate->Fill(hit.Index(), dT);
-                H.hpge_S3->Fill(hit.Index(), hit.Energy());
+                H.hpge_chan_S3->Fill(hit.Index(), hit.Energy());
+                H.hpge_chan_doppler->Fill(hit.Index(), dopplerEnergy);
                 H.hpge_energy_S3->Fill(hit.Energy());
                 H.hpge_doppler->Fill(dopplerEnergy);
                 H.hpge_ring_doppler->Fill(s3Ring, dopplerEnergy);
@@ -402,6 +412,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         }//s3.hpge
 
 
+        gatedCdTeHits.clear();
         for(auto& cdteHit : cdte) {
             const double dT = cdteHit.Time() - s3Time;
             const double cdteEnergy = cdteHit.Energy();
@@ -437,6 +448,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.cdte_chan_S3->Fill(cdteHit.Index(), cdteEnergy);
                 H.cdte_energy_S3->Fill(cdteEnergy);
                 H.cdte_doppler->Fill(dopplerEnergy);
+                H.cdte_chan_doppler->Fill(cdteHit.Index(),dopplerEnergy);
                 H.cdte_ring_doppler->Fill(s3Ring, dopplerEnergy);
     
                 H.cdte_doppler_beam->Fill(dopplerEnergyBeam);
@@ -449,6 +461,23 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                     H.CdTeKinematics[s3Ring]->Fill(openingAngle * TMath::RadToDeg(), cdteEnergy);
                     H.CdTeKinematicsBeam[s3Ring]->Fill(openingAngleBeam * TMath::RadToDeg(), cdteEnergy);
                 }//s3.cdte.dt.cdpixel
+
+                for(const CdTeHit* gatedCdTeHit : gatedCdTeHits) {
+                    const double gatedCdTeEnergy = gatedCdTeHit->Energy();
+                    H.cdte_cdte_S3->Fill(cdteEnergy, gatedCdTeEnergy);
+                    H.cdte_cdte_S3->Fill(gatedCdTeEnergy, cdteEnergy);
+                    if(cdteHit.IsNeighbour(*gatedCdTeHit)) {
+                        const double dTcc = cdteHit.Time() - gatedCdTeHit->Time();
+                        const double addbackEnergy = cdteEnergy + gatedCdTeEnergy;
+                        const XYZVector addbackPos = cdteEnergy >= gatedCdTeEnergy ? gammaPos : gatedCdTeHit->Pos(true);
+                        const double addbackAngle = ROOT::Math::VectorUtil::Angle(s3KinPos, addbackPos);
+                        const double dopplerAddbackEnergy = DopplerCorrectEnergy(addbackEnergy, addbackAngle, beta);
+                        H.cdte_addback_doppler_raw->Fill(dopplerAddbackEnergy, cdteEnergy);
+                        H.cdte_addback_doppler_raw->Fill(dopplerAddbackEnergy, gatedCdTeEnergy);
+                        H.cdte_addback_doppler_time->Fill(dTcc, dopplerAddbackEnergy);
+                    }//s3.cdte.addback
+                }
+                gatedCdTeHits.push_back(&cdteHit);
 
                 for(const HPGeHit* hpgeHit : gatedHpgeHits) {
                     H.cdte_hpge_S3->Fill(cdteEnergy, hpgeHit->Energy());

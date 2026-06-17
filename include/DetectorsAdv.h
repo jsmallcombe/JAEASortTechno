@@ -48,6 +48,9 @@ public:
     CdTeHit(Double_t tTS, UShort_t tC, UShort_t tMod, UShort_t tChan) : DetHit(tTS, tC, tMod, tChan), DetPos() {}
     virtual ~CdTeHit() = default;
 
+    UShort_t DetectorNumber() const;
+    UShort_t DetectorPixel() const;
+    bool IsNeighbour(const CdTeHit& other) const;
     Double_t DopplerCorrectedEnergy(double angleRad, double beta) const;
     static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
 

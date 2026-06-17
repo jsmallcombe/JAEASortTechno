@@ -35,22 +35,24 @@
     X(TH2F, s3_pixel_theta_energy_cut, "s3_pixels", "S3 built pixel theta vs energy;Theta [rad];Energy", 180, 0, 3.14159265358979323846, 500,0,50) \
     X(TH2F, s3_pixel_position_xy_cut, "s3_pixels", "S3 built pixel position;X;Y", 200, -50, 50, 200, -50, 50) \
     X(TH3F, s3_pixel_position_xyz, "s3_pixels", "S3 built pixel position;Z;X;Y", 120, -60, 60, 120, -60, 60, 120, -60, 60) \
-    X(TH1F, cdte_energy, "gammas", "CdTe summed energy;Energy [keV]", 1500, 0, 300) \
-    X(TH1F, cdte_energy_S3, "gammas", "CdTe summed energy (S3 gated);Energy [keV]", 1500, 0, 300) \
-    X(TH1F, cdte_energy_S3_bg, "gammas", "Background CdTe summed energy (S3 gated);Energy [keV]", 1500, 0, 300) \
-    X(TH2F, cdte_chan, "gammas", "CdTe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 1500, 0, 300) \
-    X(TH2F, cdte_chan_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 1500, 0, 300) \
-    X(TH1F, cdte_doppler, "gammas", "CdTe Doppler-corrected energy;Energy [keV]", 1500, 0, 300) \
-    X(TH1F, cdte_doppler_bg, "gammas", "Background CdTe Doppler-corrected energy;Energy [keV]", 1500, 0, 300) \
-    X(TH1F, cdte_corrected, "gammas", "Time Corrected CdTe Energy;Energy [keV]", 1500, 0, 300) \
-    X(TH1F, cdte_corrected_doppler, "gammas", "Time Corrected CdTe Doppler Energy;Energy [keV]", 1500, 0, 300) \
-    X(TH2F, cdte_ring_doppler, "gammas", "S3 ring vs CdTe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 1500, 0, 300) \
-    X(TH2F, cdte_ring_doppler_back, "gammas", "S3 ring vs CdTe Doppler-corrected energy Background;Ring;Energy [keV]", 24, -0.5, 23.5, 1500, 0, 300) \
-    X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
+    X(TH1F, cdte_energy, "gammas", "CdTe summed energy;Energy [keV]", 2000, 0, 400) \
+    X(TH1F, cdte_energy_S3, "gammas", "CdTe summed energy (S3 gated);Energy [keV]", 2000, 0, 400) \
+    X(TH1F, cdte_energy_S3_bg, "gammas", "Background CdTe summed energy (S3 gated);Energy [keV]", 2000, 0, 400) \
+    X(TH2F, cdte_chan, "gammas", "CdTe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 400) \
+    X(TH2F, cdte_chan_S3, "gammas", "CdTe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 2000, 0, 400) \
+    X(TH2F, cdte_chan_doppler, "gammas", "CdTe Evergy Doppler-corrected vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 400) \
+    X(TH1F, cdte_doppler, "gammas", "CdTe Doppler-corrected energy;Energy [keV]", 2000, 0, 400) \
+    X(TH1F, cdte_doppler_bg, "gammas", "Background CdTe Doppler-corrected energy;Energy [keV]", 2000, 0, 400) \
+    X(TH1F, cdte_corrected, "gammas", "Time Corrected CdTe Energy;Energy [keV]", 2000, 0, 400) \
+    X(TH1F, cdte_corrected_doppler, "gammas", "Time Corrected CdTe Doppler Energy;Energy [keV]", 2000, 0, 400) \
+    X(TH2F, cdte_ring_doppler, "gammas", "S3 ring vs CdTe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 400) \
+    X(TH2F, cdte_ring_doppler_back, "gammas", "S3 ring vs CdTe Doppler-corrected energy Background;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 400) \
     X(TH1F, hpge_energy, "gammas", "HPGe summed energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_energy_S3, "gammas", "HPGe summed energy (S3 gated);Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_energy_S3_bg, "gammas", "Background HPGe summed energy (S3 gated);Energy [keV]", 4000, 0, 2000) \
-    X(TH2F, hpge_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
+    X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
+    X(TH2F, hpge_chan_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
+    X(TH2F, hpge_chan_doppler, "gammas", "HPGe Evergy Doppler-corrected vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
     X(TH1F, hpge_doppler, "gammas", "HPGe Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_doppler_bg, "gammas", "Background HPGe Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_doppler_Beam, "gammas", "HPGe Beam Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
@@ -87,16 +89,21 @@
     X(TH2F, CdTeKinBeam, "kinematics", "CdTe energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Lab Energy [keV]", 180,0,180,2000,0,500)\
     X(TH2F, CdTeKinDopp, "kinematics", "CdTe doppler energy vs target/gamma angle;Angle Target-Gamma;Gamma Energy Target [keV]", 180,0,180,2000,0,500)\
     X(TH2F, CdTeKinBeamDopp, "kinematics", "CdTe doppler energy vs beam/gamma angle;Angle Beam-Gamma;Gamma Energy Beam [keV]", 180,0,180,2000,0,500)\
-    X(TH1F, cdte_doppler_beam, "kinematics_beam", "CdTe Doppler-corrected energy (beam);Energy [keV]", 1500, 0, 300) \
-    X(TH2F, cdte_ring_doppler_beam, "kinematics_beam", "S3 ring vs CdTe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 1500, 0, 300) \
+    X(TH1F, cdte_doppler_beam, "kinematics_beam", "CdTe Doppler-corrected energy (beam);Energy [keV]", 2000, 0, 400) \
+    X(TH2F, cdte_ring_doppler_beam, "kinematics_beam", "S3 ring vs CdTe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 400) \
     X(TH1F, hpge_doppler_beam, "kinematics_beam", "HPGe Doppler-corrected energy (beam);Energy [keV]", 4000, 0, 2000) \
     X(TH2F, hpge_ring_doppler_beam, "kinematics_beam", "S3 ring vs HPGe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
-    X(TH2F, cdte_cdte, "gammagamma", "CdTe-CdTe energy;CdTe energy [keV];CdTe energy [keV]", 1500, 0, 300, 1500, 0, 300) \
+    X(TH2F, cdte_cdte, "gammagamma", "CdTe-CdTe energy;CdTe energy [keV];CdTe energy [keV]", 2000, 0, 400, 2000, 0, 400) \
+    X(TH2F, cdte_cdte_S3, "gammagamma", "CdTe-CdTe energy (S3 gated);CdTe energy [keV];CdTe energy [keV]", 2000, 0, 400, 2000, 0, 400) \
+    X(TH2F, cdte_addback_raw, "gammagamma", "CdTe Addback vs raw;CdTe Addback Energy [keV];CdTe raw energy [keV]", 2000, 0, 400, 2000, 0, 400) \
+    X(TH2F, cdte_addback_time, "gammagamma", "CdTe Addback; CdTe-CdTe Time;CdTe Addback energy [keV]", 200, -1000, 1000, 2000, 0, 400) \
+    X(TH2F, cdte_addback_doppler_raw, "gammagamma", "CdTe Addback Doppler vs raw;CdTe Addback Energy [keV];CdTe raw energy [keV]", 2000, 0, 400, 2000, 0, 400) \
+    X(TH2F, cdte_addback_doppler_time, "gammagamma", "CdTe Addback Doppler; CdTe-CdTe Time;CdTe Addback energy [keV]", 200, -1000, 1000, 2000, 0, 400) \
     X(TH2F, hpge_hpge, "gammagamma", "HPGe-HPGe energy;HPGe energy [keV];HPGe energy [keV]", 1000, 0, 1000, 1000, 0, 1000) \
-    X(TH2F, cdte_hpge, "gammagamma", "CdTe-HPGe energy;CdTe energy [keV];HPGe energy [keV]", 1500, 0, 300, 1000, 0, 1000) \
+    X(TH2F, cdte_hpge, "gammagamma", "CdTe-HPGe energy;CdTe energy [keV];HPGe energy [keV]", 2000, 0, 400, 1000, 0, 1000) \
     X(TH2F, hpge_hpge_dopp, "gammagamma", "HPGe-HPGe Doppler energy;HPGe energy [keV];HPGe energy [keV]", 1000, 0, 1000, 1000, 0, 1000) \
-    X(TH2F, cdte_hpge_dopp, "gammagamma", "CdTe-HPGe Doppler energy;CdTe energy [keV];HPGe energy [keV]", 1500, 0, 300, 1000, 0, 1000) \
-    X(TH2F, cdte_hpge_S3, "gammagamma", "CdTe-HPGe energy (S3 gated);CdTe energy [keV];HPGe energy [keV]", 1500, 0, 300, 1000, 0, 1000) \
+    X(TH2F, cdte_hpge_dopp, "gammagamma", "CdTe-HPGe Doppler energy;CdTe energy [keV];HPGe energy [keV]", 2000, 0, 400, 1000, 0, 1000) \
+    X(TH2F, cdte_hpge_S3, "gammagamma", "CdTe-HPGe energy (S3 gated);CdTe energy [keV];HPGe energy [keV]", 2000, 0, 400, 1000, 0, 1000) \
     X(TH1F, cdte_cdte_dt, "gammagamma", "CdTe-CdTe time difference;#Deltat", 400, -2000, 2000) \
     X(TH1F, cdte_cdte_dt_gate, "gammagamma", "CdTe-CdTe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) \
     X(TH1F, hpge_hpge_dt, "gammagamma", "HPGe-HPGe time difference;#Deltat", 400, -2000, 2000) \
@@ -154,7 +161,7 @@ public:
             CdTeKinematics[i].reset(new TThreadedObject<TH2F>(
                 Form("CdTe_kinematics_%d", i),
                 Form("CdTe opening angle vs energy for S3 ring %d;Opening angle [deg];Energy [keV]", i),
-                180, 0, 180, 1500, 0, 300));
+                180, 0, 180, 2000, 0, 400));
             Register(*CdTeKinematics[i], "kinematics/cdte");
         }
 
@@ -170,7 +177,7 @@ public:
             CdTeKinematicsBeam[i].reset(new TThreadedObject<TH2F>(
                 Form("CdTe_kinematics_beam_%d", i),
                 Form("CdTe opening angle vs energy for S3 ring %d (beam);Opening angle [deg];Energy [keV]", i),
-                180, 0, 180, 1500, 0, 300));
+                180, 0, 180, 2000, 0, 400));
             Register(*CdTeKinematicsBeam[i], "kinematics_beam");
         }
 
