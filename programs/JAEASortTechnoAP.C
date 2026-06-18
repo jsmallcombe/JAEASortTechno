@@ -23,6 +23,11 @@ int main(int argc, char** argv)
 
 
     ConfigureS3DetFromIO();
+    if (gIO->TestInput("CdTeZOffset")) {
+        const double cdTeZOffset = gIO->GetInput("CdTeZOffset", 0);
+        CdTeHit::ZOffset(cdTeZOffset);
+        std::cout << "CdTe Z offset applied: " << cdTeZOffset << std::endl;
+    }
 
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff*10)/10.;

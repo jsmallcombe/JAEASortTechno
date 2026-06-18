@@ -118,6 +118,7 @@
     X(TH2F, gamgamTHPGe6, "gamTe", "HPGe-HPGe Time vs HPGe Energy 6;Time;Energy [keV]",  1600, -8000, 8000, 400, 0, 1600)
 
 constexpr int kS3RingKinematicsCount = 24;
+constexpr int kS3SectorCount = 32;
 
 struct HistogramRefs {
     #define JAEA_DECLARE_DETECTOR_REF(Type, Name, Directory, ...) Type* Name = nullptr;
@@ -132,6 +133,8 @@ struct HistogramRefs {
     TH2F* CdTeS3TimeEnergy[16];
     TH2F* Ringi_Sector[kS3RingKinematicsCount];
     TH2F* Ringi_Sector_ch[kS3RingKinematicsCount];
+    TH2F* Sectori_Ring[kS3SectorCount];
+    TH2F* Sectori_Ring_ch[kS3SectorCount];
 };
 
 class ThreadedHistogramSet : public ThreadedHistogramList {
@@ -148,6 +151,8 @@ public:
     std::unique_ptr<TThreadedObject<TH2F>> CdTeS3TimeEnergy[16];
     std::unique_ptr<TThreadedObject<TH2F>> Ringi_Sector[kS3RingKinematicsCount];
     std::unique_ptr<TThreadedObject<TH2F>> Ringi_Sector_ch[kS3RingKinematicsCount];
+    std::unique_ptr<TThreadedObject<TH2F>> Sectori_Ring[kS3SectorCount];
+    std::unique_ptr<TThreadedObject<TH2F>> Sectori_Ring_ch[kS3SectorCount];
 
     ThreadedHistogramSet()
     {
@@ -217,6 +222,20 @@ public:
 
 
         }
+
+        for (int i = 0; i < kS3SectorCount; ++i) {
+            Sectori_Ring[i].reset(new TThreadedObject<TH2F>(
+                Form("Sector%d_Ring", i),
+                Form("Sector %d vs Ring;Sector %d Energy;Ring Energy", i, i),
+                200, 0, 50, 200, 0, 50));
+            Register(*Sectori_Ring[i], "s3_raw/sectors");
+
+            Sectori_Ring_ch[i].reset(new TThreadedObject<TH2F>(
+                Form("Sector%d_Ring_ch", i),
+                Form("Sector %d vs Ring;Sector %d Charge;Ring Energy", i, i),
+                600, 0, 6000, 200, 0, 50));
+            Register(*Sectori_Ring_ch[i], "s3_raw/sectors");
+        }
     }
 
     HistogramRefs ResolveHistogramRefs()
@@ -248,6 +267,10 @@ public:
         for (int i = 0; i < kS3RingKinematicsCount; ++i) {
             refs.Ringi_Sector[i] = Ringi_Sector[i]->Get().get();
             refs.Ringi_Sector_ch[i] = Ringi_Sector_ch[i]->Get().get();
+        }
+        for (int i = 0; i < kS3SectorCount; ++i) {
+            refs.Sectori_Ring[i] = Sectori_Ring[i]->Get().get();
+            refs.Sectori_Ring_ch[i] = Sectori_Ring_ch[i]->Get().get();
         }
 
         return refs;

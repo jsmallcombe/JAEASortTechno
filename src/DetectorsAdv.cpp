@@ -430,6 +430,13 @@ Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
     return DopplerCorrectEnergy(Energy(), angleRad, beta);
 }
 
+void CdTeHit::ZOffset(double offset)
+{
+    for (auto& vector : CdTeWorldVectors) {
+        vector = XYZVector(vector.X(), vector.Y(), vector.Z() + offset);
+    }
+}
+
 XYZVector CdTeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
 {
     if(i < 16) {

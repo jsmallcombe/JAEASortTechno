@@ -10,11 +10,10 @@
 
 #define beam_mass 53966.429
 #define target_mass 221742.905
-#define beamE 120
-#define beamE_t 120
+constexpr double defaultBeamE = 120;
 
 
-double CalcBeta_Beam(double theta){
+double CalcBeta_Beam(double theta, double beamE){
 
     double tau = 1;
     double thetaCM;
@@ -37,7 +36,7 @@ double CalcBeta_Beam(double theta){
     return std::sqrt(1 - 1/(gamma*gamma));
 
 }
-double CalcBeta_Target(double theta){
+double CalcBeta_Target(double theta, double beamE){
 
     double tau = 1;
     double thetaCM;
@@ -51,7 +50,7 @@ double CalcBeta_Target(double theta){
 
     double term1 = beam_mass * target_mass / std::pow((beam_mass+target_mass),2);
     double term2 = 1 + tau*tau + 2*tau*std::cos(TMath::Pi() - thetaCM);
-    double term3 = beamE_t;
+    double term3 = beamE;
 
     double KE = term1 * term2 * term3;
 
@@ -123,6 +122,8 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
 
     if (!initialized) {
         if (gIO != nullptr) {
+            const double beamE = gIO->GetInput("BeamEnergy", defaultBeamE);
+
             gateRefs.invkin = gIO->GetGateConst(0);
             gateRefs.beta = gIO->GetGateConst(1);
             gateRefs.betabeam = gIO->GetGateConst(2);
@@ -134,8 +135,8 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
             for(int i=0;i<10000;i++){
                 double theta=i*TMath::Pi()/10000.;
                 gateRefs.invkinl->SetPoint(gateRefs.invkinl->GetN(),theta,ThetaTarg_FromThetaBeam(theta));
-                gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Beam(theta));
-                gateRefs.betabeaml->SetPoint(gateRefs.betabeaml->GetN(),theta,CalcBeta_Target(theta));
+                gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Beam(theta, beamE));
+                gateRefs.betabeaml->SetPoint(gateRefs.betabeaml->GetN(),theta,CalcBeta_Target(theta, beamE));
             }
             gateRefs.invkinSp=TSpline3("invkinSp",gateRefs.invkinl);
             gateRefs.betaSp=TSpline3("betaSp",gateRefs.betal);
@@ -279,6 +280,10 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             if(ring.Index() < kS3RingKinematicsCount && std::abs(dT)<200){
                 H.Ringi_Sector[ring.Index()]->Fill(ring.Energy(), sector.Energy());
                 H.Ringi_Sector_ch[ring.Index()]->Fill(ring.Charge(), sector.Energy());
+            }
+            if(sector.Index() < kS3SectorCount && std::abs(dT)<200){
+                H.Sectori_Ring[sector.Index()]->Fill(sector.Energy(), ring.Energy());
+                H.Sectori_Ring_ch[sector.Index()]->Fill(sector.Charge(), ring.Energy());
             }
 
         }//s3ring.s3sector
