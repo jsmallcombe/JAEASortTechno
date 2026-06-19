@@ -33,6 +33,7 @@
     X(TH1F, s3_pixel_ring_sector_dt_cut, "s3_pixels", "S3 built pixel ring-sector time difference;Ring - sector time", 201, -1005, 1005) \
     X(TH2F, s3_pixel_ring_sector_energy_cut, "s3_pixels", "S3 built pixel ring energy vs sector energy;Ring energy;Sector energy", 250,0,50, 250,0,50) \
     X(TH2F, s3_pixel_theta_energy_cut, "s3_pixels", "S3 built pixel theta vs energy;Theta [rad];Energy", 180, 0, 3.14159265358979323846, 500,0,50) \
+    X(TH2F, s3_pixel_ring_sector_cut, "s3_pixels", "S3 built pixel ring vs sector;Sector;Ring", 32, -0.5, 31.5, 24, -0.5, 23.5) \
     X(TH2F, s3_pixel_position_xy_cut, "s3_pixels", "S3 built pixel position;X;Y", 200, -50, 50, 200, -50, 50) \
     X(TH3F, s3_pixel_position_xyz, "s3_pixels", "S3 built pixel position;Z;X;Y", 120, -60, 60, 120, -60, 60, 120, -60, 60) \
     X(TH1F, cdte_energy, "gammas", "CdTe summed energy;Energy [keV]", 2000, 0, 400) \

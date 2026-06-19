@@ -53,6 +53,8 @@ public:
     bool IsNeighbour(const CdTeHit& other) const;
     Double_t DopplerCorrectedEnergy(double angleRad, double beta) const;
     static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
+    static void XOffset(double offset);
+    static void YOffset(double offset);
     static void ZOffset(double offset);
 
 protected:
@@ -142,6 +144,8 @@ public:
     static double fOuterDiameter;
     static double fInnerDiameter;
     static double fTargetDistance;
+    static double fXOffset;
+    static double fYOffset;
 
     static double fFrontBackTime;
     static double fFrontBackEnergy;

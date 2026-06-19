@@ -8,16 +8,16 @@
 
 #include <optional>
 
-#define beam_mass 53966.429
-#define target_mass 221742.905
+constexpr double defaultBeamMass = 53966.429;
+constexpr double defaultTargetMass = 221742.905;
 constexpr double defaultBeamE = 120;
 
 
-double CalcBeta_Beam(double theta, double beamE){
+double CalcBeta_Beam(double theta, double beamE, double beamMass, double targetMass){
 
     double tau = 1;
     double thetaCM;
-    tau = beam_mass / target_mass;
+    tau = beamMass / targetMass;
     if(std::sin(theta) > 1/tau){
         theta = std::asin(1/tau);
         if(theta < 0)
@@ -25,22 +25,22 @@ double CalcBeta_Beam(double theta, double beamE){
     }
     thetaCM = std::asin(tau * std::sin(theta)) + theta;
 
-    double term1 = std::pow(target_mass/(beam_mass+target_mass),2);
+    double term1 = std::pow(targetMass/(beamMass+targetMass),2);
     double term2 = 1 + tau*tau + 2*tau*std::cos(thetaCM);
     double term3 = beamE;
 
     double KE = term1 * term2 * term3;
 
-    double gamma = KE / beam_mass + 1;
+    double gamma = KE / beamMass + 1;
 
     return std::sqrt(1 - 1/(gamma*gamma));
 
 }
-double CalcBeta_Target(double theta, double beamE){
+double CalcBeta_Target(double theta, double beamE, double beamMass, double targetMass){
 
     double tau = 1;
     double thetaCM;
-    tau = beam_mass / target_mass;
+    tau = beamMass / targetMass;
     if(std::sin(theta) > 1/tau){
         theta = std::asin(1/tau);
         if(theta < 0)
@@ -48,22 +48,22 @@ double CalcBeta_Target(double theta, double beamE){
     }
     thetaCM = std::asin(tau * std::sin(theta)) + theta;
 
-    double term1 = beam_mass * target_mass / std::pow((beam_mass+target_mass),2);
+    double term1 = beamMass * targetMass / std::pow((beamMass+targetMass),2);
     double term2 = 1 + tau*tau + 2*tau*std::cos(TMath::Pi() - thetaCM);
     double term3 = beamE;
 
     double KE = term1 * term2 * term3;
 
-    double gamma = KE / beam_mass + 1;
+    double gamma = KE / beamMass + 1;
 
     return std::sqrt(1 - 1/(gamma*gamma));
 
 }
-double ThetaTarg_FromThetaBeam(double theta){
+double ThetaTarg_FromThetaBeam(double theta, double beamMass, double targetMass){
 
     double tau = 1;
     double thetaCM;
-    tau = beam_mass / target_mass;
+    tau = beamMass / targetMass;
     if(std::sin(theta) > 1/tau){
         theta = std::asin(1/tau);
         if(theta < 0)
@@ -123,6 +123,8 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
     if (!initialized) {
         if (gIO != nullptr) {
             const double beamE = gIO->GetInput("BeamEnergy", defaultBeamE);
+            const double beamMass = gIO->GetInput("BeamMass", defaultBeamMass);
+            const double targetMass = gIO->GetInput("TargetMass", defaultTargetMass);
 
             gateRefs.invkin = gIO->GetGateConst(0);
             gateRefs.beta = gIO->GetGateConst(1);
@@ -134,9 +136,9 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
 
             for(int i=0;i<10000;i++){
                 double theta=i*TMath::Pi()/10000.;
-                gateRefs.invkinl->SetPoint(gateRefs.invkinl->GetN(),theta,ThetaTarg_FromThetaBeam(theta));
-                gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Beam(theta, beamE));
-                gateRefs.betabeaml->SetPoint(gateRefs.betabeaml->GetN(),theta,CalcBeta_Target(theta, beamE));
+                gateRefs.invkinl->SetPoint(gateRefs.invkinl->GetN(),theta,ThetaTarg_FromThetaBeam(theta, beamMass, targetMass));
+                gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Beam(theta, beamE, beamMass, targetMass));
+                gateRefs.betabeaml->SetPoint(gateRefs.betabeaml->GetN(),theta,CalcBeta_Target(theta, beamE, beamMass, targetMass));
             }
             gateRefs.invkinSp=TSpline3("invkinSp",gateRefs.invkinl);
             gateRefs.betaSp=TSpline3("betaSp",gateRefs.betal);
@@ -334,6 +336,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             H.s3_pixel_ring_sector_energy_cut->Fill(ring->Energy(), sector->Energy());
         }
 
+        H.s3_pixel_ring_sector_cut->Fill(s3Sector, s3Ring);
         H.s3_pixel_position_xy_cut->Fill(pos.X(), pos.Y());
         H.s3_pixel_theta_energy_cut->Fill(pos.Theta(), s3Energy);
         H.s3_pixel_position_xy_cut->Fill(pos.X(), pos.Y());

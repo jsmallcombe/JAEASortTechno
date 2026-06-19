@@ -31,6 +31,8 @@ double S3Det::fOffsetPhiSet = -22.5 * kPi / 180.0;
 double S3Det::fOuterDiameter = 70.0;
 double S3Det::fInnerDiameter = 22.0;
 double S3Det::fTargetDistance = -30.0;
+double S3Det::fXOffset = 0.0;
+double S3Det::fYOffset = 0.0;
 
 double S3Det::fFrontBackTime = 30.0;
 double S3Det::fFrontBackEnergy = 0.95;
@@ -360,7 +362,7 @@ XYZVector S3Det::GetPosition(int ring, int sector, bool smear, XYZVector* pos)
     }
     phi += fOffsetPhiSet;
 
-    const XYZVector basePos(std::cos(phi) * radius, std::sin(phi) * radius, fTargetDistance);
+    const XYZVector basePos(std::cos(phi) * radius + fXOffset, std::sin(phi) * radius + fYOffset, fTargetDistance);
     if(pos != nullptr) {*pos = basePos;}
     if(!smear) return basePos;
     
@@ -372,7 +374,7 @@ XYZVector S3Det::GetPosition(int ring, int sector, bool smear, XYZVector* pos)
     const double phiSep = sep / radius;
     phi = gThRand().Uniform(phi - 0.5 * phiWidth + phiSep, phi + 0.5 * phiWidth - phiSep);
 
-    return XYZVector(std::cos(phi) * radius, std::sin(phi) * radius, fTargetDistance);
+    return XYZVector(std::cos(phi) * radius + fXOffset, std::sin(phi) * radius + fYOffset, fTargetDistance);
 }
 
 XYZVector CdTeWorldVectors[16]{
@@ -428,6 +430,20 @@ bool CdTeHit::IsNeighbour(const CdTeHit& other) const
 Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
 {
     return DopplerCorrectEnergy(Energy(), angleRad, beta);
+}
+
+void CdTeHit::XOffset(double offset)
+{
+    for (auto& vector : CdTeWorldVectors) {
+        vector = XYZVector(vector.X() + offset, vector.Y(), vector.Z());
+    }
+}
+
+void CdTeHit::YOffset(double offset)
+{
+    for (auto& vector : CdTeWorldVectors) {
+        vector = XYZVector(vector.X(), vector.Y() + offset, vector.Z());
+    }
 }
 
 void CdTeHit::ZOffset(double offset)
