@@ -54,10 +54,11 @@
     X(TH2F, hpge_chan, "gammas", "HPGe Evergy vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
     X(TH2F, hpge_chan_S3, "gammas", "HPGe Evergy vs Channel (S3 Gated);Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
     X(TH2F, hpge_chan_doppler, "gammas", "HPGe Evergy Doppler-corrected vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
+    X(TH2F, hpge_chan_doppler_beam, "gammas", "HPGe Beam Doppler-corrected vs Channel;Channel;Energy", 16, -0.5, 15.5, 2000, 0, 2000) \
     X(TH1F, hpge_doppler, "gammas", "HPGe Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
     X(TH1F, hpge_doppler_bg, "gammas", "Background HPGe Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
-    X(TH1F, hpge_doppler_Beam, "gammas", "HPGe Beam Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
-    X(TH1F, hpge_doppler_Beam_bg, "gammas", "Background HPGe Beam Doppler-corrected energy;Energy [keV]", 4000, 0, 2000) \
+    X(TH1F, hpge_doppler_Beam, "gammas", "HPGe Beam Doppler-corrected energy (beam);Energy [keV]", 4000, 0, 2000) \
+    X(TH1F, hpge_doppler_Beam_bg, "gammas", "Background HPGe Beam Doppler-corrected energy (beam);Energy [keV]", 4000, 0, 2000) \
     X(TH2F, hpge_ring_doppler, "gammas", "S3 ring vs HPGe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
     X(TH2F, hpge_ring_doppler_bg, "gammas", "BG S3 ring vs HPGe Doppler-corrected energy;Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
     X(TH2F, hpge_ring_doppler_Beam, "gammas", "S3 ring vs HPGe Doppler-corrected energy (beam);Ring;Energy [keV]", 24, -0.5, 23.5, 2000, 0, 2000) \
