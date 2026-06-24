@@ -148,7 +148,7 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
             gateRefs.betal = new TGraph();
             gateRefs.betabeaml = new TGraph();
 
-            for(int i=0;i<2000;i++){
+            for(int i=1;i<2000;i++){
                 double theta=i*TMath::Pi()/2000.;
                 // gateRefs.invkinl->SetPoint(gateRefs.invkinl->GetN(),theta,ThetaTarg_FromThetaBeam(theta, beamMass, targetMass));
                 // gateRefs.betal->SetPoint(gateRefs.betal->GetN(),theta,CalcBeta_Target(theta, beamE, beamMass, targetMass));
