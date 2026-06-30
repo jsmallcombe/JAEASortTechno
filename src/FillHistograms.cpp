@@ -12,8 +12,8 @@
 constexpr double defaultBeamMass = 53966.429;
 constexpr double defaultTargetMass = 221742.905;
 constexpr double defaultBeamE = 120;
-constexpr double defaultTargetLoss = 5.7;
-constexpr double defaultBeamLoss = 27.9;
+constexpr double defaultTargetLoss = 6;
+constexpr double defaultBeamLoss = 27.5;
 
 double CalcBeta_Beam(double theta, double beamE, double beamMass, double targetMass){
 
@@ -205,7 +205,16 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
             gateRefs.hpgeS3down = gIO->GetInput("HpGeS3Down", -100);
             gateRefs.hpgeS3backup = gIO->GetInput("HPGeS3BackUp", gateRefs.hpgeS3up+1500);
             gateRefs.hpgeS3backdown = gIO->GetInput("HPGeS3BackDown", gateRefs.hpgeS3down)+1500;
+            gateRefs.cdtecdtegate = gIO->GetInput("CdTeCdTeGate", 100);
+            gateRefs.cdtehpgeup = gIO->GetInput("CdTeHPGeUp", 100);
+            gateRefs.cdtehpgedown = gIO->GetInput("CdTeHPGeDown", -100);
+            gateRefs.hpgehpgegate = gIO->GetInput("HPGeHPGeGate", 100);
             gateRefs.pixelcut = gIO->GetInput("PixelCutE", 5);
+
+
+            if(gIO->TestInput("BlurVectors")){
+                gateRefs.blur=true;
+            }
         }
         initialized = true;
     }
@@ -247,7 +256,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
             const double dT = hitTime - hitbTime;
             H.cdte_cdte_dt->Fill(dT);
-            if(std::abs(dT) < 100.0) {
+            if(std::abs(dT) < gates.cdtecdtegate) {
                 const double hitbEnergy = hitb.Energy();
                 H.cdte_cdte_dt_gate->Fill(dT);
                 H.cdte_cdte->Fill(hitEnergy, hitbEnergy);
@@ -265,7 +274,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         for(auto&& hpgeHit : hpge) {
             const double dT = hitTime - hpgeHit.Time();
             H.cdte_hpge_dt->Fill(dT);
-            if(std::abs(dT) < 100.0) {
+            if(dT > gates.cdtehpgedown && dT < gates.cdtehpgeup) {
                 H.cdte_hpge_dt_gate->Fill(dT);
                 H.cdte_hpge->Fill(hitEnergy, hpgeHit.Energy());
             }//cdte.hpge.dt
@@ -296,7 +305,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             if(hit.Index()==5)H.gamgamTHPGe6->Fill(dT,hitEnergy);
 
 
-            if(std::abs(dT) < 100.0) {
+            if(std::abs(dT) < gates.hpgehpgegate) {
                 const double hitbEnergy = hitb.Energy();
                 H.hpge_hpge_dt_gate->Fill(dT);
                 H.hpge_hpge->Fill(hitEnergy, hitbEnergy);
@@ -356,7 +365,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         H.s3_pixel_energy->Fill(s3Energy);
         H.s3_pixel_ring_energy->Fill(s3Ring, s3Energy);
         H.s3_pixel_sector_energy->Fill(s3Sector, s3Energy);
-        const XYZVector pos = s3hit.Pos(true);
+        const XYZVector pos = s3hit.Pos(gates.blur);
         H.s3_pixel_theta_energy->Fill(pos.Theta(), s3Energy);
 
         const DetHit* ring = s3hit.RingHit();
@@ -402,7 +411,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             H.hpge_S3time_w->Fill(dT);
             H.hpge_chan_S3time->Fill(hit.Index(), dT);
             H.hpge_chan_S3time_w->Fill(hit.Index(), dT);
-            XYZVector gammaPos = hit.Pos(true);
+            XYZVector gammaPos = hit.Pos(gates.blur);
             const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
             const double dopplerEnergyBeam = hit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
             const XYZVector originalGammaPos = gammaPos;
@@ -443,11 +452,11 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 for(auto&& hpgeHit : hpge) {
                     if(hit.Energy() != hpgeHit.Energy()){
                         const double dTgg = hit.Time() - hpgeHit.Time();
-                        XYZVector gammaPos2 = hpgeHit.Pos(true);
+                        XYZVector gammaPos2 = hpgeHit.Pos(gates.blur);
                         if(gates.goff)gammaPos2 -= TargVec;
                         const double openingAngle_hpge = ROOT::Math::VectorUtil::Angle(TargVec, gammaPos2);
                         const double dopplerEnergyhpge = hpgeHit.DopplerCorrectedEnergy(openingAngle_hpge, beta);
-                        if(std::abs(dTgg) < 100.0) {
+                        if(std::abs(dTgg) < gates.hpgehpgegate) {
                             H.hpge_hpge_dopp->Fill(dopplerEnergy, dopplerEnergyhpge);
                         }//cdte.hpge.dt
                     }
@@ -474,7 +483,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             H.cdte_chan_S3time->Fill(cdteHit.Index(), dT);
             H.cdte_chan_S3time_w->Fill(cdteHit.Index(), dT);
             if(cdteHit.Index()<16) H.CdTeS3TimeEnergy[cdteHit.Index()]->Fill(dT,cdteEnergy);
-            XYZVector gammaPos = cdteHit.Pos(true);
+            XYZVector gammaPos = cdteHit.Pos(gates.blur);
             const double openingAngleBeam = ROOT::Math::VectorUtil::Angle(pos, gammaPos);
             const double dopplerEnergyBeam = cdteHit.DopplerCorrectedEnergy(openingAngleBeam, betaBeam);
             const XYZVector originalGammaPos = gammaPos;
@@ -540,11 +549,11 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
                 for(auto&& hpgeHit : hpge) {
                     const double dTcg = cdteHit.Time() - hpgeHit.Time();
-                    XYZVector gammaPos2 = hpgeHit.Pos(true);
+                    XYZVector gammaPos2 = hpgeHit.Pos(gates.blur);
                     if(gates.goff)gammaPos2 -= TargVec;
                     const double openingAngle_hpge = ROOT::Math::VectorUtil::Angle(TargVec, gammaPos2);
                     const double dopplerEnergyhpge = hpgeHit.DopplerCorrectedEnergy(openingAngle_hpge, beta);
-                    if(std::abs(dTcg) < 100.0) {
+                    if(dTcg > gates.cdtehpgedown && dTcg < gates.cdtehpgeup) {
                         H.cdte_hpge_dopp->Fill(dopplerEnergy, dopplerEnergyhpge);
                     }//cdte.hpge.dt
                 }//cdte.hpge

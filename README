@@ -1,14 +1,36 @@
 JAEASortIO input syntax
 
+Time Units Note
+    While the event building and TTree are in time stamp 10ns ticks,
+    all user inputs, and detector classes, have been converted to ns for ease.
+
+GENERAL INPUT METHODS
+  options file:
+    file.info
+      Info files contain the same syntax as command-line input.
+      Info files are expanded inline, and may themselves reference further info files.
+      Lines beginning with hash (#) are treated as comments and ignored.
+
+  numeric options:
+    -OptionName value
+      stores value under OptionName for later access via IO::TestInput() and IO::GetInput().
+
+  particle-ID gates / Graph inputs:
+    -ID GateFile.root gate_id
+    -GR GraphFile.root gate_id
+      loads the first TGraph inheriting object (inc TCutG) found in GateFile.root and associates it with gate_id.
+
+DATA FILES INPUT / OUTPUT
   bin run input:
     -bin /filepath/runprefix
       Or provide one non-.root argument to use as the digitiser run stem.
+      e.g. /Data/run_
   event tree output (from bin):
     -tree / -T
       Writes the event tree to /filepath/runprefix.root.
     -treepath /path/to/output
-      Rewrites the event tree output to /path/to/output/runprefix.root.
-  event tree input (to hist):
+      Writes the event tree output to /path/to/output/runprefix.root.
+  event tree input (to sort histograms):
     file.root
     '/path/run*.root'
       Note: If an event tree input includes file.root, 
@@ -16,7 +38,7 @@ JAEASortIO input syntax
       Duplicate inputs are removed after wildcard expansion and split-file discovery.
   histogram output:
     -H / -h
-      Build histograms with automated filename
+      Build histograms with automated filename /filepath/runprefix_hist.root
     -hist path/hist.root
       Build histograms with manual path/filename
     NOTE: While options -tree and -h *can* be used together, due to reasons of root-file efficiency, it is about 30-50% faster to run the program sequentially. 
@@ -24,65 +46,145 @@ JAEASortIO input syntax
     -O / -o
       Enables overwrite mode for event tree and histogram outputs.
 
-
-  calibration file:
-    file.cal
-  options file:
-    file.info
-      Info files contain the same syntax as command-line input.
-      Info files are expanded inline, and may themselves reference further info files.
-      Lines beginning with hash (#) are treated as comments and ignored.
-  digitiser module;
+EVENT BUILDING CONFIGURATION
+  Digitiser module order;
     -APV8104 zeroindex
     -APV8032 zeroindex
     -APV8016A zeroindex
       zeroindex is the module number corresponding to fmodl=1.
-      If not provided, modules are indexed in order of .bin file discovery.
-  digitiser timestamp offsets:
+      If not provided, modules are indexed automatically by .bin file discovery.
+      If any runs are missing a data file i.e. not using all modules, auto discovery should NOT be used.
+    -TriggerModule N
+      Repeat for mutliple modules.
+      When provided, only built events containing at least one hit from one of these module numbers are written.
+      Only hits from these modules extend the build window after building a candidate event has started.
+  Digitiser timestamp offsets:
     -TOffN offset
       Applies `offset` to every timestamp read from module `N`.
       Example: `-TOff4 400`
       Offsets may be negative. Given in ns
       Applied before event building. Use cal file for small individual channel adjustments
-  numeric options:
-    -OptionName value
-      stores value under OptionName for later access via IO::TestInput()/IO::GetInput().
-  particle-ID gates / Graph inputs:
-    -ID GateFile.root gate_id
-    -GR GraphFile.root gate_id
-      loads the first TGraph inheriting object (inc TCutG) found in GateFile.root and associates it with gate_id.
-
-  Additional runtime tuning options used by JAEASortTechnoAP:
-    -Workers N
-      Number of histogram worker threads for tree->hist and chunk->hist stages.
+  Time Sorting:
     -Window ns
       Coincidence build window in ns for grouping hits into one built event.
     -BinChunk N
       Raw digitiser read chunk size used before local sorting.
       BinChunk <<< BuildBuffer    Recommended 1-100
-    -BuildBuffer N
-      Active event buffer size used by the built-event builder.
-      Too small may give Time Errors due to digitiser disorder
-      Default 1,000,000
     -Tolerance ns
       Timestamp ordering tolerance forwarded to the digitiser readers.
-    -HistChunks N
-      Built-event count per histogram chunk in the direct bin->hist path.
     -MaxTs ticks
-      Optional maximum timestamp for raw digitiser sorting, given in raw
-      timestamp ticks to match timestamp disorder messages. When globalMaxTs
-      surpasses this value, digitiser buffer filling stops and final events are
-      drained normally.
-    -TriggerModule N
-      Repeatable. When provided, only built events containing at least one
-      hit from one of these module numbers are written.
-      Only hits from these same modules extend the build window after the
-      candidate event has started.
-    -BasicHistograms 0|1
-      When set non-zero, only the detector-class-free basic histograms are created and filled.
-    -HistogramTimers 0|1
-      When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.
+      Optional, maximum timestamp for raw digitiser sorting (experimental).
+      Given in raw timestamp ticks to match timestamp disorder messages. 
+      When globalMaxTs surpasses this value, digitiser buffer filling stops and final events are drained normally.
+      Use for indivdual runs in which data became unusable at some mid-point.
 
-    Time Units Note
-      While the event building and TTree are in time stamp 10ns ticks,
-      all user inputs, and detector classes, have been convered to ns for ease.
+GENERAL HISTOGRAM SORTING
+  -Workers N
+    Number of histogram worker threads for tree->hist and chunk->hist stages.
+  -BuildBuffer N
+    Active event buffer size used by the built-event builder.
+    Too small may give Time Errors due to digitiser disorder
+    Default 1,000,000
+  -HistChunks N
+    Built-event count per histogram chunk in the direct bin->hist path.
+  -BasicHistograms 0|1
+    When set non-zero, only the detector-class-free basic histograms are created and filled.
+  -HistogramTimers 0|1
+    Debugging option for sort speed.
+    When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.
+
+
+DETECTOR CLASSES
+
+  calibration file:
+    file.cal
+  File containing the map of digitiser channel to detector class, 
+  pol2 energy calibration parameters and per-channel time offsets.
+  If command list include multiple .cal arguments the final one listed will be used.
+
+  -CdTeZOffset distance (mm)
+    Applies a Z-position offset to CdTe detector classes.
+
+  -XOffset distance (mm)
+    Applies an X-position offset to CdTe and S3 detector classes.
+  -YOffset distance (mm)
+    Applies a Y-position offset to CdTe and S3 detector classes.
+
+  -S3FrontBackEnergy value
+    S3 front/back energy matching tolerance.
+  -S3FrontBackOffset value
+    S3 front/back energy offset.
+  -S3FrontBackTime ns
+    S3 front/back time matching tolerance.
+  -S3PreferenceSector 0|1
+    Prefer sector energy when building S3 pixels.
+  -S3MultiHit 0|1
+    Allow S3 multi-hit pixel building.
+  -S3KeepShared 0|1
+    Keep S3 pixels that share ring or sector hits.
+  -S3FlipPhi 0|1
+    Flip the S3 phi convention. i.e. Change which way the detector is facing
+  -S3TargetDistance distance (mm)
+    S3 target distance used for hit positions. Can be negative for Upstream
+  -S3OffsetPhiSetDeg degrees
+    S3 phi offset in degrees. Angle between the signal cable and Phi=0
+
+HISTOGRAM SORT SPECIFIC OPTIONS
+Options only used in FillHistograms
+i.e. not fundamental to event parsing of detector calses 
+
+  Kinematics
+    -BeamEnergy MeV
+      Beam energy at mean interaction point.
+      Used for generated kinematics and beta splines. Default 120.
+    -BeamMass MeV/c^2
+      Beam mass.
+    -TargetMass MeV/c^2
+      Target mass.
+    -TargetLoss MeV
+      Energy loss in MeV for target ion exiting target at from mean interaction position along Theta=0
+      Angular correction assumes simple a 1/cos(theta) scaling.
+    -BeamLoss MeV
+      Energy loss in MeV for beam ion exiting target at from mean interaction position along Theta=180
+    -GammaOffset distance (mm)
+      Offset applied to gamma detector positions for opening-angle calculations.
+      Assuming a mean flight path along calculated target ion path before gamma decay.
+    -BlurVectors
+      Use blurred detector hit positions when calculating vectors.
+    -PixelCutE energy
+      Minimum S3 pixel energy used to selected "good" events.
+      i.e. scatterd beam not light particles. Default 5.
+
+  Coincidence Time Gates
+    -CdTeS3Up ns
+      CdTe-S3 upper prompt time gate. Default 100 ns.
+    -CdTeS3Down ns
+      CdTe-S3 lower prompt time gate. Default -100 ns.
+    -CdTeS3BackUp ns
+      CdTe-S3 upper background time gate. Default CdTeS3Up + 1500 ns.
+    -CdTeS3BackDown ns
+      CdTe-S3 lower background time gate. Default CdTeS3Down + 1500 ns.
+    -HpGeS3Up ns
+      HPGe-S3 upper prompt time gate. Default 100 ns.
+    -HpGeS3Down ns
+      HPGe-S3 lower prompt time gate. Default -100 ns.
+    -HPGeS3BackUp ns
+      HPGe-S3 upper background time gate. Default HpGeS3Up + 1500 ns.
+    -HPGeS3BackDown ns
+      HPGe-S3 lower background time gate. Default HPGeS3Down + 1500 ns.
+    -CdTeCdTeGate ns
+      CdTe-CdTe gamma-gamma prompt time gate. Default 100 ns.
+    -CdTeHPGeUp ns
+      CdTe-HPGe gamma-gamma upper time gate. Default 100 ns.
+    -CdTeHPGeDown ns
+      CdTe-HPGe gamma-gamma lower time gate. Default -100 ns.
+    -HPGeHPGeGate ns
+      HPGe-HPGe gamma-gamma prompt time gate. Default 100 ns.
+
+  CdTe Time-Walk Correction (experimental)
+    -CdTeS3TZero ns
+      CdTe-S3 timing zero used for CdTe time-energy correction. Default 0 ns.
+    -CdTeKeVns value
+      CdTe time-energy correction slope. Default -1.
+    -CdTeEZero keV
+      CdTe time-energy correction reference energy. Default 120 keV.

@@ -31,6 +31,7 @@ struct HistogramGateRefs {
     const TGraph* betabeam = nullptr;
     double gammaoffset = 1;
     bool goff = false;
+    bool blur = false;
     TGraph* invkinl = nullptr;
     TGraph* betal = nullptr;
     TGraph* betabeaml = nullptr;
@@ -42,6 +43,9 @@ struct HistogramGateRefs {
     double cdteS3tzero = 0, cdtekevns = -0.5,  cdteezero = 120;
     double hpgeS3up = 100, hpgeS3down = -100;
     double hpgeS3backup = 100, hpgeS3backdown = -100;
+    double cdtecdtegate = 100;
+    double cdtehpgeup = 100, cdtehpgedown = -100;
+    double hpgehpgegate = 100;
 
     double pixelcut = 5;
 };
