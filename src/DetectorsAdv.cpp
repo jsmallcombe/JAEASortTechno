@@ -24,15 +24,19 @@ bool S3Det::fAllowMultiHit = false;
 bool S3Det::fKeepShared = true;
 bool S3Det::fFlipPhi = false;
 
-int S3Det::fRingNumber = 24;
-int S3Det::fSectorNumber = 32;
 double S3Det::fOffsetPhiCon = 0.5 * kPi;
 double S3Det::fOffsetPhiSet = -22.5 * kPi / 180.0;
 double S3Det::fOuterDiameter = 70.0;
 double S3Det::fInnerDiameter = 22.0;
 double S3Det::fTargetDistance = -30.0;
-double S3Det::fXOffset = 0.0;
-double S3Det::fYOffset = 0.0;
+XYZVector S3Det::fOffset(0.0, 0.0, 0.0);
+bool S3Det::fPositionsBuilt = false;
+std::array<std::array<XYZVector, S3Det::fSectorNumber>, S3Det::fRingNumber> S3Det::fPixelPositions;
+std::array<double, S3Det::fRingNumber> S3Det::fRingRadii;
+std::array<double, S3Det::fSectorNumber> S3Det::fSectorPhis;
+double S3Det::fRingWidth = 0.0;
+double S3Det::fPhiWidth = 0.0;
+double S3Det::fBlurSep = 0.0;
 
 double S3Det::fFrontBackTime = 30.0;
 double S3Det::fFrontBackEnergy = 0.95;
@@ -60,7 +64,7 @@ void S3Hit::BuildPos() const
         return;
     }
 
-    fBlurPos = S3Det::GetPosition(static_cast<int>(Ring()), static_cast<int>(Sector()), true, &fPos);
+    fBlurPos = S3Det::GetPosition(Ring(), Sector(), true, &fPos);
 }
 
 void S3Det::Clear()
@@ -347,34 +351,67 @@ void S3Det::BuildHits()
     fPixelsBuilt = true;
 }
 
-XYZVector S3Det::GetPosition(int ring, int sector, bool smear, XYZVector* pos)
+void S3Det::BuildPositions()
 {
     // S3 ring and sector indices are treated as 0-based here: ring 0 is the inner ring,
     // and sector 0 starts at phi=0 before the fixed connector/setup offsets.
-    const double ringWidth = (fOuterDiameter - fInnerDiameter) * 0.5 / static_cast<double>(fRingNumber);
+    fRingWidth = (fOuterDiameter - fInnerDiameter) * 0.5 / static_cast<double>(fRingNumber);
     const double innerRadius = fInnerDiameter * 0.5;
-    const double phiWidth = 2.0 * kPi / static_cast<double>(fSectorNumber);
+    fPhiWidth = 2.0 * kPi / static_cast<double>(fSectorNumber);
+    fBlurSep = fRingWidth * 0.025;
 
-    double radius = innerRadius + ringWidth * (static_cast<double>(ring) + 0.5);
-    double phi = phiWidth * static_cast<double>(sector) + fOffsetPhiCon;
-    if(fFlipPhi) {
-        phi = -phi;
+    for(unsigned int sector = 0; sector < fSectorNumber; sector++) {
+        double phi = fPhiWidth * static_cast<double>(sector) + fOffsetPhiCon;
+        if(fFlipPhi) {
+            phi = -phi;
+        }
+        fSectorPhis[sector] = phi + fOffsetPhiSet;
     }
-    phi += fOffsetPhiSet;
 
-    const XYZVector basePos(std::cos(phi) * radius + fXOffset, std::sin(phi) * radius + fYOffset, fTargetDistance);
+    for(unsigned int ring = 0; ring < fRingNumber; ring++) {
+        const double radius = innerRadius + fRingWidth * (static_cast<double>(ring) + 0.5);
+        fRingRadii[ring] = radius;
+
+        for(unsigned int sector = 0; sector < fSectorNumber; sector++) {
+            const double phi = fSectorPhis[sector];
+            fPixelPositions[ring][sector] = XYZVector(std::cos(phi) * radius + fOffset.X(),
+                                                       std::sin(phi) * radius + fOffset.Y(),
+                                                       fTargetDistance + fOffset.Z());
+        }
+    }
+
+    fRingWidth-=fBlurSep;
+    fRingWidth*=0.5;
+    fPositionsBuilt = true;
+}
+
+XYZVector S3Det::GetPosition(unsigned int ring, unsigned int sector, bool smear, XYZVector* pos)
+{
+    if(!fPositionsBuilt) {
+        BuildPositions();
+    }
+
+    ring %= fRingNumber;
+    sector %= fSectorNumber;
+
+    const XYZVector& basePos = fPixelPositions[ring][sector];
     if(pos != nullptr) {*pos = basePos;}
     if(!smear) return basePos;
-    
-    const double sep = ringWidth * 0.025;
-    const double r1 = radius - 0.5 * ringWidth + sep;
-    const double r2 = radius + 0.5 * ringWidth - sep;
-    radius = std::sqrt(gThRand().Uniform(r1 * r1, r2 * r2));
 
-    const double phiSep = sep / radius;
-    phi = gThRand().Uniform(phi - 0.5 * phiWidth + phiSep, phi + 0.5 * phiWidth - phiSep);
+    const double radius = fRingRadii[ring] + gThRand().Uniform(-fRingWidth,fRingWidth);
+    const double phiSep = fBlurSep / radius;
+    const double phi = gThRand().Uniform(fSectorPhis[sector] - 0.5 * fPhiWidth + phiSep,
+                                         fSectorPhis[sector] + 0.5 * fPhiWidth - phiSep);
+    const double dx = std::cos(phi) * radius - std::cos(phi) * radius;
+    const double dy = std::sin(phi) * radius - std::sin(phi) * radius;
 
-    return XYZVector(std::cos(phi) * radius + fXOffset, std::sin(phi) * radius + fYOffset, fTargetDistance);
+    return XYZVector(basePos.X() + dx, basePos.Y() + dy, basePos.Z());
+}
+
+void S3Det::SetOffset(const XYZVector& offset)
+{
+    fOffset = offset;
+    fPositionsBuilt = false;
 }
 
 XYZVector CdTeWorldVectors[16]{
@@ -432,24 +469,10 @@ Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
     return DopplerCorrectEnergy(Energy(), angleRad, beta);
 }
 
-void CdTeHit::XOffset(double offset)
+void CdTeHit::SetOffset(const XYZVector& offset)
 {
-    for (auto& vector : CdTeWorldVectors) {
-        vector = XYZVector(vector.X() + offset, vector.Y(), vector.Z());
-    }
-}
-
-void CdTeHit::YOffset(double offset)
-{
-    for (auto& vector : CdTeWorldVectors) {
-        vector = XYZVector(vector.X(), vector.Y() + offset, vector.Z());
-    }
-}
-
-void CdTeHit::ZOffset(double offset)
-{
-    for (auto& vector : CdTeWorldVectors) {
-        vector = XYZVector(vector.X(), vector.Y(), vector.Z() + offset);
+    for(auto& vector : CdTeWorldVectors) {
+        vector = vector + offset;
     }
 }
 

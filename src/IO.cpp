@@ -653,6 +653,19 @@ void JAEASortIO::ProcessOption(TString str){
             SetModuleTimeOffset(module, offset);
             std::cout << "TOff[" << module << "] : " << offset*10 << " ns, " << offset << " ticks" << std::endl;
 
+        }else if(str.EqualTo("-vec")){
+            TString inputName;
+            double x = 0.0;
+            double y = 0.0;
+            double z = 0.0;
+            *this >> inputName >> x >> y >> z;
+            inputName.ToLower();
+
+            VectorInputNames.push_back(inputName);
+            VectorInputs.push_back(XYZVector(x, y, z));
+
+            std::cout << inputName << " : " << x << " " << y << " " << z << std::endl;
+
         }else if(str.EqualTo("-id") || str.EqualTo("-gr")){// Load a particle ID gate, next argument file containing name
             *this>>str;
             if(IsRootPath(str.Data())){ // If a root file name
@@ -708,10 +721,10 @@ void JAEASortIO::ProcessOption(TString str){
             str.Remove(TString::kLeading,'-');
             double inputdata;
             *this>>inputdata;
-            
+
             NumericInputNames.push_back(str);
             NumericInputs.push_back(inputdata);
-        
+
             std::cout<< str<<" : " << inputdata << std::endl;
         }
 }
@@ -840,4 +853,15 @@ std::vector<double> JAEASortIO::GetInputs(TString InputName) const
         }
     }
     return values;
+}
+
+JAEASortIO::XYZVector JAEASortIO::GetXYZVectorInput(TString InputName) const
+{
+    InputName.ToLower();
+    for(unsigned int i = 0; i < VectorInputNames.size(); i++) {
+        if(VectorInputNames[i] == InputName) {
+            return VectorInputs[i];
+        }
+    }
+    return XYZVector(0.0, 0.0, 0.0);
 }

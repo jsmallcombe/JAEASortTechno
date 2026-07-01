@@ -23,23 +23,9 @@ int main(int argc, char** argv)
 
 
     ConfigureS3DetFromIO();
-    if (gIO->TestInput("XOffset")) {
-        const double xOffset = gIO->GetInput("XOffset", 0);
-        CdTeHit::XOffset(xOffset);
-        S3Det::fXOffset += xOffset;
-        std::cout << "CdTe/S3 X offset applied: " << xOffset << std::endl;
-    }
-    if (gIO->TestInput("YOffset")) {
-        const double yOffset = gIO->GetInput("YOffset", 0);
-        CdTeHit::YOffset(yOffset);
-        S3Det::fYOffset += yOffset;
-        std::cout << "CdTe/S3 Y offset applied: " << yOffset << std::endl;
-    }
-    if (gIO->TestInput("CdTeZOffset")) {
-        const double cdTeZOffset = gIO->GetInput("CdTeZOffset", 0);
-        CdTeHit::ZOffset(cdTeZOffset);
-        std::cout << "CdTe Z offset applied: " << cdTeZOffset << std::endl;
-    }
+    XYZVector cdTeOffset = gIO->GetXYZVectorInput("CdTe");
+    CdTeHit::SetOffset(cdTeOffset);
+    std::cout << "CdTe offset applied: (" << cdTeOffset.X() << ", " << cdTeOffset.Y() << ", " << cdTeOffset.Z() << ")" << std::endl;
 
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff*10)/10.;

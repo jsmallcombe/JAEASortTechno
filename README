@@ -14,6 +14,8 @@ GENERAL INPUT METHODS
   numeric options:
     -OptionName value
       stores value under OptionName for later access via IO::TestInput() and IO::GetInput().
+    -vec Name x y z
+      stores an XYZ vector under Name for later access via IO::GetXYZVectorInput().
 
   particle-ID gates / Graph inputs:
     -ID GateFile.root gate_id
@@ -102,13 +104,11 @@ DETECTOR CLASSES
   pol2 energy calibration parameters and per-channel time offsets.
   If command list include multiple .cal arguments the final one listed will be used.
 
-  -CdTeZOffset distance (mm)
-    Applies a Z-position offset to CdTe detector classes.
-
-  -XOffset distance (mm)
-    Applies an X-position offset to CdTe and S3 detector classes.
-  -YOffset distance (mm)
-    Applies a Y-position offset to CdTe and S3 detector classes.
+  -vec CdTe x y z (mm)
+    Applies one XYZ position offset vector to CdTe detector classes.
+  -vec S3 x y z (mm)
+    Applies one XYZ position offset vector to S3 detector classes.
+    The Z component is added to S3TargetDistance.
 
   -S3FrontBackEnergy value
     S3 front/back energy matching tolerance.

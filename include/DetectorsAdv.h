@@ -5,6 +5,7 @@
 #include <Detectors.h>
 #include <Math/Vector3D.h>
 
+#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -53,9 +54,7 @@ public:
     bool IsNeighbour(const CdTeHit& other) const;
     Double_t DopplerCorrectedEnergy(double angleRad, double beta) const;
     static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
-    static void XOffset(double offset);
-    static void YOffset(double offset);
-    static void ZOffset(double offset);
+    static void SetOffset(const XYZVector& offset);
 
 protected:
     void BuildPos() const override;
@@ -137,23 +136,33 @@ public:
     static bool fKeepShared;
     static bool fFlipPhi;
 
-    static int fRingNumber;
-    static int fSectorNumber;
+    static constexpr unsigned int fRingNumber = 24;
+    static constexpr unsigned int fSectorNumber = 32;
     static double fOffsetPhiCon;
     static double fOffsetPhiSet;
     static double fOuterDiameter;
     static double fInnerDiameter;
     static double fTargetDistance;
-    static double fXOffset;
-    static double fYOffset;
+    static XYZVector fOffset;
 
     static double fFrontBackTime;
     static double fFrontBackEnergy;
     static double fFrontBackOffset;
 
-    static XYZVector GetPosition(int ring, int sector, bool smear = false, XYZVector* pos = nullptr);
+    static void SetOffset(const XYZVector& offset);
+    static XYZVector GetPosition(unsigned int ring, unsigned int sector, bool smear = false, XYZVector* pos = nullptr);
 
 private:
+    static bool fPositionsBuilt;
+    static std::array<std::array<XYZVector, fSectorNumber>, fRingNumber> fPixelPositions;
+    static std::array<double, fRingNumber> fRingRadii;
+    static std::array<double, fSectorNumber> fSectorPhis;
+    static double fRingWidth;
+    static double fPhiWidth;
+    static double fBlurSep;
+
+    static void BuildPositions();
+
     void BuildHits();
     bool TimeMatches(const DetHit& ring, const DetHit& sector) const;
     bool EnergyMatches(double ringEnergy, double sectorEnergy) const;

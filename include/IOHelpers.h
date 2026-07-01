@@ -15,6 +15,8 @@ void ConfigureS3DetFromIO()
     S3Det::fKeepShared = gIO->GetBoolInput("S3KeepShared", S3Det::fKeepShared);
     S3Det::fFlipPhi = gIO->GetBoolInput("S3FlipPhi", S3Det::fFlipPhi);
     S3Det::fTargetDistance = gIO->GetInput("S3TargetDistance", S3Det::fTargetDistance);
+    XYZVector s3Offset = gIO->GetXYZVectorInput("S3");
+    S3Det::SetOffset(s3Offset);
 
     if (gIO->TestInput("S3OffsetPhiSetDeg")) {
         S3Det::fOffsetPhiSet = gIO->GetInput("S3OffsetPhiSetDeg") * 3.14159265358979323846 / 180.0;
@@ -29,6 +31,7 @@ void ConfigureS3DetFromIO()
               << " FlipPhi=" << S3Det::fFlipPhi
               << " PhiOffset=" << S3Det::fOffsetPhiSet
               << " TargetDistance=" << S3Det::fTargetDistance
+              << " Offset=(" << S3Det::fOffset.X() << ", " << S3Det::fOffset.Y() << ", " << S3Det::fOffset.Z() << ")"
               << std::endl;
 }
 

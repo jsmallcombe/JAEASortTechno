@@ -15,6 +15,7 @@
 #include <TString.h>
 #include <TKey.h>
 #include <TGraph.h>
+#include <Math/Vector3D.h>
 #include <filesystem>
 #include <ostream>
 #include <cstdint>
@@ -30,6 +31,7 @@ std::vector<TString> GetTreeSplitFileList(TString base);
 class JAEASortIO{
     
     public:
+    using XYZVector = ROOT::Math::XYZVector;
     
 	JAEASortIO(){};
 	JAEASortIO(int argc, char *argv[]);	
@@ -76,6 +78,7 @@ class JAEASortIO{
     double GetInput(TString InputName,double=0) const;
     bool GetBoolInput(TString InputName,bool=false) const;
     std::vector<double> GetInputs(TString InputName) const;
+    XYZVector GetXYZVectorInput(TString InputName) const;
     std::vector<const TGraph*> ResolveGateGraphs() const;
     const TGraph* GetGateConst(u_short i=0) const;
 	
@@ -85,6 +88,8 @@ class JAEASortIO{
 	vector<string> store;
     vector<double> NumericInputs;
     vector<TString> NumericInputNames;
+    vector<XYZVector> VectorInputs;
+    vector<TString> VectorInputNames;
     vector<TString> InputRootSpecs;
     static std::vector<int32_t> ModuleTimeOffsets;
 
