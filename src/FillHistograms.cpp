@@ -274,6 +274,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         for(auto&& hpgeHit : hpge) {
             const double dT = hitTime - hpgeHit.Time();
             H.cdte_hpge_dt->Fill(dT);
+            H.cdte_hpge_dt3->Fill(hitEnergy, hpgeHit.Energy(),dT);
             if(dT > gates.cdtehpgedown && dT < gates.cdtehpgeup) {
                 H.cdte_hpge_dt_gate->Fill(dT);
                 H.cdte_hpge->Fill(hitEnergy, hpgeHit.Energy());
@@ -304,9 +305,10 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
             if(hit.Index()==4)H.gamgamTHPGe5->Fill(dT,hitEnergy);
             if(hit.Index()==5)H.gamgamTHPGe6->Fill(dT,hitEnergy);
 
-
+            const double hitbEnergy = hitb.Energy();
+            H.hpge_hpge_dt3->Fill(hitEnergy, hitbEnergy,dT);
+            H.hpge_hpge_dt3->Fill(hitbEnergy, hitEnergy,dT);
             if(std::abs(dT) < gates.hpgehpgegate) {
-                const double hitbEnergy = hitb.Energy();
                 H.hpge_hpge_dt_gate->Fill(dT);
                 H.hpge_hpge->Fill(hitEnergy, hitbEnergy);
                 H.hpge_hpge->Fill(hitbEnergy, hitEnergy);
@@ -352,6 +354,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
     std::vector<const HPGeHit*> gatedHpgeHits;
     gatedHpgeHits.reserve(hpge.size());
+    std::vector<double> gatedHpgeDopplerTarg;
+    gatedHpgeDopplerTarg.reserve(hpge.size());
     std::vector<const CdTeHit*> gatedCdTeHits;
     gatedCdTeHits.reserve(cdte.size());
 
@@ -405,6 +409,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         const XYZVector TargVec{ROOT::Math::Polar3DVector(gates.gammaoffset, TargTheta, TargPhi)};
             
         gatedHpgeHits.clear();
+        gatedHpgeDopplerTarg.clear();
         for(auto& hit : hpge) {
             const double dT = hit.Time() - s3Time;
             H.hpge_S3time->Fill(dT);
@@ -424,7 +429,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
 
             if(dT > gates.hpgeS3down && dT < gates.hpgeS3up) {
-                gatedHpgeHits.push_back(&hit);
+
                 H.hpge_S3time_g->Fill(dT);
                 
                 // Moved here from hpge raw as position maths is a bit heavy, so limit the calls
@@ -445,22 +450,28 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 H.HPGeKinBeam->Fill(openingAngleBeam * TMath::RadToDeg(), hit.Energy());
                 H.HPGeKinDopp->Fill(openingAngle * TMath::RadToDeg(), dopplerEnergy);
                 H.HPGeKinBeamDopp->Fill(openingAngleBeam * TMath::RadToDeg(), dopplerEnergyBeam);
+
                 if(s3Ring < kS3RingKinematicsCount) {
                     H.HPGeKinematics[s3Ring]->Fill(openingAngle * TMath::RadToDeg(), hit.Energy());
                     H.HPGeKinematicsBeam[s3Ring]->Fill(openingAngleBeam * TMath::RadToDeg(), hit.Energy());
                 }//s3.hpge.dt.hpgepixel
-                for(auto&& hpgeHit : hpge) {
-                    if(hit.Energy() != hpgeHit.Energy()){
-                        const double dTgg = hit.Time() - hpgeHit.Time();
-                        XYZVector gammaPos2 = hpgeHit.Pos(gates.blur);
-                        if(gates.goff)gammaPos2 -= TargVec;
-                        const double openingAngle_hpge = ROOT::Math::VectorUtil::Angle(TargVec, gammaPos2);
-                        const double dopplerEnergyhpge = hpgeHit.DopplerCorrectedEnergy(openingAngle_hpge, beta);
-                        if(std::abs(dTgg) < gates.hpgehpgegate) {
-                            H.hpge_hpge_dopp->Fill(dopplerEnergy, dopplerEnergyhpge);
-                        }//cdte.hpge.dt
-                    }
-                }//cdte.hpge
+
+                //gatedHpgeHits Only contains previous hits
+                for(unsigned int y=0;y<gatedHpgeHits.size();y++) {
+                    const double dTgg = hit.Time() - gatedHpgeHits[y]->Time();
+
+                    //Could consider not symeterising this as it dTgg is not going to be symsetric
+                    H.hpge_hpge_dopp_dt3->Fill(dopplerEnergy, gatedHpgeDopplerTarg[y],dTgg);
+                    H.hpge_hpge_dopp_dt3->Fill(gatedHpgeDopplerTarg[y], dopplerEnergy,dTgg);
+
+                    if(std::abs(dTgg) < gates.hpgehpgegate) {
+                        H.hpge_hpge_dopp->Fill(dopplerEnergy, gatedHpgeDopplerTarg[y]);
+                        H.hpge_hpge_dopp->Fill(gatedHpgeDopplerTarg[y], dopplerEnergy);
+                    }//s3.hpge.hpge.dt
+                }//s3.hpge.hpge
+                gatedHpgeHits.push_back(&hit);
+                gatedHpgeDopplerTarg.push_back(dopplerEnergy);
+
             }//s3.hpge.dt
             if(dT > (gates.hpgeS3backdown) && dT < (gates.hpgeS3backup)){
                 H.hpge_energy_S3_bg->Fill(hit.Energy());
@@ -543,20 +554,16 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                 }
                 gatedCdTeHits.push_back(&cdteHit);
 
-                for(const HPGeHit* hpgeHit : gatedHpgeHits) {
-                    H.cdte_hpge_S3->Fill(cdteEnergy, hpgeHit->Energy());
-                }//s3.cdte.dt.hpge
 
-                for(auto&& hpgeHit : hpge) {
-                    const double dTcg = cdteHit.Time() - hpgeHit.Time();
-                    XYZVector gammaPos2 = hpgeHit.Pos(gates.blur);
-                    if(gates.goff)gammaPos2 -= TargVec;
-                    const double openingAngle_hpge = ROOT::Math::VectorUtil::Angle(TargVec, gammaPos2);
-                    const double dopplerEnergyhpge = hpgeHit.DopplerCorrectedEnergy(openingAngle_hpge, beta);
+                for(unsigned int y=0;y<gatedHpgeHits.size();y++) {
+                    const double dTcg = cdteHit.Time() - gatedHpgeHits[y]->Time();
+                    H.cdte_hpge_S3->Fill(cdteEnergy, gatedHpgeHits[y]->Energy());
+                    H.cdte_hpge_dopp_dt3->Fill(dopplerEnergy, gatedHpgeDopplerTarg[y],dTcg);
                     if(dTcg > gates.cdtehpgedown && dTcg < gates.cdtehpgeup) {
-                        H.cdte_hpge_dopp->Fill(dopplerEnergy, dopplerEnergyhpge);
-                    }//cdte.hpge.dt
-                }//cdte.hpge
+                        H.cdte_hpge_dopp->Fill(dopplerEnergy, gatedHpgeDopplerTarg[y]);
+                    }//s3.cdte.hpge.dt
+                }//s3.cdte.hpge
+                
             }//s3.cdte.dt
             
             if(dT > (gates.cdteS3backdown) && dT < (gates.cdteS3backup )){

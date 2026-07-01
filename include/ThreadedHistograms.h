@@ -107,11 +107,15 @@
     X(TH2F, cdte_hpge_dopp, "gammagamma", "CdTe-HPGe Doppler energy;CdTe energy [keV];HPGe energy [keV]", 2000, 0, 400, 1000, 0, 1000) \
     X(TH2F, cdte_hpge_S3, "gammagamma", "CdTe-HPGe energy (S3 gated);CdTe energy [keV];HPGe energy [keV]", 2000, 0, 400, 1000, 0, 1000) \
     X(TH1F, cdte_cdte_dt, "gammagamma", "CdTe-CdTe time difference;#Deltat", 400, -2000, 2000) \
-    X(TH1F, cdte_cdte_dt_gate, "gammagamma", "CdTe-CdTe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) \
+    X(TH1F, cdte_cdte_dt_gate, "gammagamma", "CdTe-CdTe time gate;#Deltat", 400, -2000, 2000) \
     X(TH1F, hpge_hpge_dt, "gammagamma", "HPGe-HPGe time difference;#Deltat", 400, -2000, 2000) \
-    X(TH1F, hpge_hpge_dt_gate, "gammagamma", "HPGe-HPGe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000) \
+    X(TH1F, hpge_hpge_dt_gate, "gammagamma", "HPGe-HPGe time gate;#Deltat", 400, -2000, 2000) \
     X(TH1F, cdte_hpge_dt, "gammagamma", "CdTe-HPGe time difference;#Deltat", 400, -2000, 2000) \
-    X(TH1F, cdte_hpge_dt_gate, "gammagamma", "CdTe-HPGe time difference |#Deltat| < 100;#Deltat", 400, -2000, 2000)\
+    X(TH1F, cdte_hpge_dt_gate, "gammagamma", "CdTe-HPGe time gate;#Deltat", 400, -2000, 2000)\
+    X(TH3F, hpge_hpge_dt3, "gammagamma", "HPGe-HPGe energy time;HPGe energy [keV];HPGe energy [keV];#Deltat [ns]", 500, 0, 1000, 500, 0, 1000,31,-3100,3100) \
+    X(TH3F, cdte_hpge_dt3, "gammagamma", "CdTe-HPGe energy time;CdTe energy [keV];HPGe energy [keV];#Deltat [ns]", 400, 0, 400, 500, 0, 1000,31,-3100,3100) \
+    X(TH3F, hpge_hpge_dopp_dt3, "gammagamma", "HPGe-HPGe energy time;HPGe Doppler energy [keV];HPGe Doppler energy [keV];#Deltat [ns]", 500, 0, 1000, 500, 0, 1000,31,-3100,3100) \
+    X(TH3F, cdte_hpge_dopp_dt3, "gammagamma", "CdTe-HPGe energy time;CdTe Doppler energy [keV];HPGe Doppler energy [keV];#Deltat [ns]", 400, 0, 400, 500, 0, 1000,31,-3100,3100) \
     X(TH2F, gamgamTHPGe1, "gamTe", "HPGe-HPGe Time vs HPGe Energy 1;Time;Energy [keV]",  1600, -8000, 8000, 400, 0, 1600) \
     X(TH2F, gamgamTHPGe2, "gamTe", "HPGe-HPGe Time vs HPGe Energy 2;Time;Energy [keV]",  1600, -8000, 8000, 400, 0, 1600) \
     X(TH2F, gamgamTHPGe3, "gamTe", "HPGe-HPGe Time vs HPGe Energy 3;Time;Energy [keV]",  1600, -8000, 8000, 400, 0, 1600) \

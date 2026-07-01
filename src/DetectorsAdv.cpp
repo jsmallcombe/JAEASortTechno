@@ -1,7 +1,5 @@
 #include <DetectorsAdv.h>
-
 #include <Globals.h>
-
 #include <algorithm>
 #include <cmath>
 
@@ -402,8 +400,10 @@ XYZVector S3Det::GetPosition(unsigned int ring, unsigned int sector, bool smear,
     const double phiSep = fBlurSep / radius;
     const double phi = gThRand().Uniform(fSectorPhis[sector] - 0.5 * fPhiWidth + phiSep,
                                          fSectorPhis[sector] + 0.5 * fPhiWidth - phiSep);
-    const double dx = std::cos(phi) * radius - std::cos(phi) * radius;
-    const double dy = std::sin(phi) * radius - std::sin(phi) * radius;
+    const double dx = std::cos(phi) * radius - std::cos(fSectorPhis[sector]) * fRingRadii[ring];
+    const double dy = std::sin(phi) * radius - std::sin(fSectorPhis[sector]) * fRingRadii[ring];
+    // We havent actually saved much computation by precalculating, as blue is calculated and stored by DetPos child 
+    // even if it isnt used, and we have to calculate the raw vec here (Or store vec with and without offset)
 
     return XYZVector(basePos.X() + dx, basePos.Y() + dy, basePos.Z());
 }
