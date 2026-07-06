@@ -154,7 +154,6 @@ public:
     static double fOffsetPhiSet;
     static double fOuterDiameter;
     static double fInnerDiameter;
-    static double fTargetDistance;
     static XYZVector fOffset;
 
     static double fFrontBackTime;

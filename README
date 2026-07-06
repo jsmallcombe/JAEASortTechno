@@ -113,7 +113,6 @@ DETECTOR CLASSES
 
   -vec S3 x y z (mm)
     Applies one XYZ position offset vector to S3 detector.
-    The Z component is ADDED to S3TargetDistance (so either use delta-Z here or do not use S3TargetDistance).
 
   -S3FrontBackEnergy value
     S3 front/back energy matching tolerance.
@@ -129,8 +128,6 @@ DETECTOR CLASSES
     Keep S3 pixels that share ring or sector hits.
   -S3FlipPhi 0|1
     Flip the S3 phi convention. i.e. Change which way the detector is facing
-  -S3TargetDistance distance (mm)
-    S3 target distance used for hit positions. Can be negative for Upstream
   -S3OffsetPhiSetDeg degrees
     S3 phi offset in degrees. Angle between the signal cable and Phi=0
 

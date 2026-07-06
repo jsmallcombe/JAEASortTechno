@@ -26,7 +26,6 @@ double S3Det::fOffsetPhiCon = 0.5 * kPi;
 double S3Det::fOffsetPhiSet = -22.5 * kPi / 180.0;
 double S3Det::fOuterDiameter = 70.0;
 double S3Det::fInnerDiameter = 22.0;
-double S3Det::fTargetDistance = -30.0;
 XYZVector S3Det::fOffset(0.0, 0.0, 0.0);
 bool S3Det::fPositionsBuilt = false;
 std::array<std::array<XYZVector, S3Det::fSectorNumber>, S3Det::fRingNumber> S3Det::fPixelPositions;
@@ -377,7 +376,7 @@ void S3Det::BuildPositions()
             const double phi = fSectorPhis[sector];
             fPixelPositions[ring][sector] = XYZVector(std::cos(phi) * radius + fOffset.X(),
                                                        std::sin(phi) * radius + fOffset.Y(),
-                                                       fTargetDistance + fOffset.Z());
+                                                       fOffset.Z());
         }
     }
 
