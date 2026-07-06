@@ -29,7 +29,7 @@ struct HistogramGateRefs {
     const TGraph* invkin = nullptr;
     const TGraph* beta = nullptr;
     const TGraph* betabeam = nullptr;
-    double gammaoffset = 1;
+    double gammaoffset = 1.0;
     bool goff = false;
     bool blur = false;
     TGraph* invkinl = nullptr;

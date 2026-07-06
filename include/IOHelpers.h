@@ -35,4 +35,25 @@ void ConfigureS3DetFromIO()
               << std::endl;
 }
 
+void ConfigureCdTeDetFromIO()
+{
+
+    CdTeHit::fFaceDistance = gIO->GetInput("CdTeFace", CdTeHit::fFaceDistance);
+    CdTeHit::fFaceAngles[0] = gIO->GetInput("CdTeAngle1", CdTeHit::fFaceAngles[0]);
+    CdTeHit::fFaceAngles[1] = gIO->GetInput("CdTeAngle2", CdTeHit::fFaceAngles[1]);
+    CdTeHit::fFaceAngles[2] = gIO->GetInput("CdTeAngle3", CdTeHit::fFaceAngles[2]);
+    CdTeHit::fFaceAngles[3] = gIO->GetInput("CdTeAngle4", CdTeHit::fFaceAngles[3]);
+
+    XYZVector cdTeOffset = gIO->GetXYZVectorInput("CdTe");
+    CdTeHit::SetOffset(cdTeOffset);
+
+    std::cout << "CdTe settings: FaceDistance= " << CdTeHit::fFaceDistance
+              << " FaceAngles=(" << CdTeHit::fFaceAngles[0] <<" , "<< CdTeHit::fFaceAngles[1] <<" , "<< CdTeHit::fFaceAngles[2] <<" , "<< CdTeHit::fFaceAngles[3] <<") "
+              << " Offset=(" << cdTeOffset.X() << ", " << cdTeOffset.Y() << ", " << cdTeOffset.Z() << ") " 
+              << std::endl;
+
+    CdTeHit::fPositionsBuilt=false;
+
+}
+
 #endif

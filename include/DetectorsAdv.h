@@ -15,11 +15,10 @@ double DopplerCorrectEnergy(double energyKeV, double angleRad, double beta);
 
 class DetPos {
 protected:
-    mutable bool fPosSet{false};
-    mutable XYZVector fPos{0.0, 0.0, 0.0};
+    mutable bool fBlurPosSet{false};
     mutable XYZVector fBlurPos{0.0, 0.0, 0.0};
 
-    virtual void BuildPos() const = 0;
+    virtual XYZVector BuildPos(bool smear) const = 0;
 
 public:
     DetPos() = default;
@@ -53,11 +52,24 @@ public:
     UShort_t DetectorPixel() const;
     bool IsNeighbour(const CdTeHit& other) const;
     Double_t DopplerCorrectedEnergy(double angleRad, double beta) const;
-    static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
-    static void SetOffset(const XYZVector& offset);
 
+private:
+    static void BuildPositions();
+    static void ApplyOffset();
+
+public:
+    static double fFaceDistance;
+    static double fFaceAngles[4];
+    static XYZVector fOffset;
+    static bool fPositionsBuilt;
+
+    static XYZVector PosStatic(bool smear = false, u_short i = 0);
+    static void SetOffset(const XYZVector& offset);
+    static void SetFaceDistance(double in){fFaceDistance=in;}
+    static void SetFaceAngle(u_short i,double ang){fFaceAngles[i%4]=ang;}
+    
 protected:
-    void BuildPos() const override;
+    XYZVector BuildPos(bool smear) const override;
 };
 
 class HPGeHit : public DetHit, public DetPos {
@@ -67,10 +79,10 @@ public:
     virtual ~HPGeHit() = default;
 
     Double_t DopplerCorrectedEnergy(double angleRad, double beta) const;
-    static XYZVector PosStatic(bool smear = false, u_short i = 0, XYZVector* pos = nullptr);
+    static XYZVector PosStatic(bool smear = false, u_short i = 0);
 
 protected:
-    void BuildPos() const override;
+    XYZVector BuildPos(bool smear) const override;
 };
 
 class S3Hit : public DetPos {
@@ -98,7 +110,7 @@ public:
     Double_t Time() const { return fPrimary != nullptr ? fPrimary->Time() : 0.0; }
 
 protected:
-    void BuildPos() const override;
+    XYZVector BuildPos(bool smear) const override;
 };
 
 class S3Det {
@@ -150,7 +162,7 @@ public:
     static double fFrontBackOffset;
 
     static void SetOffset(const XYZVector& offset);
-    static XYZVector GetPosition(unsigned int ring, unsigned int sector, bool smear = false, XYZVector* pos = nullptr);
+    static XYZVector GetPosition(unsigned int ring, unsigned int sector, bool smear = false);
 
 private:
     static bool fPositionsBuilt;

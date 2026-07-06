@@ -141,7 +141,11 @@ const HistogramGateRefs& HistogramGateRefsBuffer()
 
             if(gIO->TestInput("GammaOffset")){
                 gateRefs.gammaoffset = gIO->GetInput("GammaOffset", 1.0);
+                gateRefs.gammaoffset*=3E2;
                 gateRefs.goff = true;
+                if(gateRefs.gammaoffset<=0){
+                    gateRefs.gammaoffset=1E-9;
+                }
             }
 
             gateRefs.invkinl = new TGraph();
@@ -406,7 +410,8 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
         const double TargTheta = gates.invkinSp.Eval(pos.Theta());
         const double TargPhi = pos.Phi() + TMath::Pi();
 
-        const XYZVector TargVec{ROOT::Math::Polar3DVector(gates.gammaoffset, TargTheta, TargPhi)};
+        const XYZVector TargVec{ROOT::Math::Polar3DVector(gates.gammaoffset*beta, TargTheta, TargPhi)};
+        // If beta = 0, |TargVec|=0, angular calculations would fail, but doppler correction would be zero anyway...
             
         gatedHpgeHits.clear();
         gatedHpgeDopplerTarg.clear();
@@ -543,7 +548,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
                     if(cdteHit.IsNeighbour(*gatedCdTeHit)) {
                         const double dTcc = cdteHit.Time() - gatedCdTeHit->Time();
                         const double addbackEnergy = cdteEnergy + gatedCdTeEnergy;
-                        XYZVector addbackPos = cdteEnergy >= gatedCdTeEnergy ? originalGammaPos : gatedCdTeHit->Pos(true);
+                        XYZVector addbackPos = cdteEnergy >= gatedCdTeEnergy ? originalGammaPos : gatedCdTeHit->Pos(gates.blur);
                         if(gates.goff)addbackPos -= TargVec;
                         const double addbackAngle = ROOT::Math::VectorUtil::Angle(TargVec, addbackPos);
                         const double dopplerAddbackEnergy = DopplerCorrectEnergy(addbackEnergy, addbackAngle, beta);

@@ -21,11 +21,8 @@ int main(int argc, char** argv)
     bool DoHistSort = gIO->DoHistSort;
     bool Overwrite = gIO->Overwrite;
 
-
     ConfigureS3DetFromIO();
-    XYZVector cdTeOffset = gIO->GetXYZVectorInput("CdTe");
-    CdTeHit::SetOffset(cdTeOffset);
-    std::cout << "CdTe offset applied: (" << cdTeOffset.X() << ", " << cdTeOffset.Y() << ", " << cdTeOffset.Z() << ")" << std::endl;
+    ConfigureCdTeDetFromIO();
 
     int HistWorkers = gIO->GetInput("Workers", 4);
     Long64_t TS_Diff = gIO->GetInput("Window", gTS_Diff*10)/10.;

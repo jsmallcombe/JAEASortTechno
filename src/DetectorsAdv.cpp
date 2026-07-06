@@ -42,27 +42,30 @@ double S3Det::fFrontBackOffset = 150.0;
 
 XYZVector DetPos::Pos(bool smear) const
 {
-    if(!fPosSet) {
-        BuildPos();
-        fPosSet = true;
+    if(!smear) {
+        return BuildPos(false);
     }
-    return smear ? fBlurPos : fPos;
+
+    if(!fBlurPosSet) {
+        fBlurPos = BuildPos(true);
+        fBlurPosSet = true;
+    }
+    return fBlurPos;
 }
 
 void DetPos::ResetPos() const
 {
-    fPosSet = false;
-    fPos = XYZVector(0.0, 0.0, 0.0);
+    fBlurPosSet = false;
     fBlurPos = XYZVector(0.0, 0.0, 0.0);
 }
 
-void S3Hit::BuildPos() const
+XYZVector S3Hit::BuildPos(bool smear) const
 {
     if(fRingHit == nullptr || fSectorHit == nullptr) {
-        return;
+        return XYZVector(0.0, 0.0, 0.0);
     }
 
-    fBlurPos = S3Det::GetPosition(Ring(), Sector(), true, &fPos);
+    return S3Det::GetPosition(Ring(), Sector(), smear);
 }
 
 void S3Det::Clear()
@@ -383,7 +386,7 @@ void S3Det::BuildPositions()
     fPositionsBuilt = true;
 }
 
-XYZVector S3Det::GetPosition(unsigned int ring, unsigned int sector, bool smear, XYZVector* pos)
+XYZVector S3Det::GetPosition(unsigned int ring, unsigned int sector, bool smear)
 {
     if(!fPositionsBuilt) {
         BuildPositions();
@@ -393,7 +396,6 @@ XYZVector S3Det::GetPosition(unsigned int ring, unsigned int sector, bool smear,
     sector %= fSectorNumber;
 
     const XYZVector& basePos = fPixelPositions[ring][sector];
-    if(pos != nullptr) {*pos = basePos;}
     if(!smear) return basePos;
 
     const double radius = fRingRadii[ring] + gThRand().Uniform(-fRingWidth,fRingWidth);
@@ -413,6 +415,7 @@ void S3Det::SetOffset(const XYZVector& offset)
     fOffset = offset;
     fPositionsBuilt = false;
 }
+
 
 XYZVector CdTeWorldVectors[16]{
     {3.5, -25.71, 15.806},
@@ -439,9 +442,33 @@ double CdTeZYsmear[4][2]{
     {0.845,-1.813}
 };
 
-void CdTeHit::BuildPos() const
+double CdTeHit::fFaceDistance=30;
+double CdTeHit::fFaceAngles[4]={-65,-35,35,65};
+bool CdTeHit::fPositionsBuilt=false;
+XYZVector CdTeHit::fOffset=XYZVector(0,0,0);
+
+void CdTeHit::BuildPositions(){
+    for(int i=0;i<4;i++){
+        double theta=fFaceAngles[i]*kPi/180.;
+        double cY=fFaceDistance*sin(theta);
+        double cZ=fFaceDistance*cos(theta);
+        double oY=3.05*cos(theta);
+        double oZ=-3.05*sin(theta);
+        CdTeWorldVectors[0+i*4]=XYZVector(3.05,cY+oY,cZ+oZ);
+        CdTeWorldVectors[1+i*4]=XYZVector(-3.05,cY+oY,cZ+oZ);
+        CdTeWorldVectors[2+i*4]=XYZVector(-3.05,cY-oY,cZ-oZ);
+        CdTeWorldVectors[3+i*4]=XYZVector(3.05,cY-oY,cZ-oZ);
+
+        CdTeZYsmear[i][0]=2.*cos(theta);
+        CdTeZYsmear[i][1]=-2.*sin(theta);
+    }
+    ApplyOffset();
+    fPositionsBuilt=true;
+}
+
+XYZVector CdTeHit::BuildPos(bool smear) const
 {
-    fBlurPos = PosStatic(true, Index(), &fPos);
+    return PosStatic(smear, Index());
 }
 
 UShort_t CdTeHit::DetectorNumber() const
@@ -471,23 +498,28 @@ Double_t CdTeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
 
 void CdTeHit::SetOffset(const XYZVector& offset)
 {
+    fOffset=offset;
+    ApplyOffset();
+}
+void CdTeHit::ApplyOffset()
+{
     for(auto& vector : CdTeWorldVectors) {
-        vector = vector + offset;
+        vector = vector + fOffset;
     }
 }
 
-XYZVector CdTeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
+XYZVector CdTeHit::PosStatic(bool smear,u_short i)
 {
-    if(i < 16) {
-        if(pos != nullptr) {
-            *pos = CdTeWorldVectors[i];
-        }
+    i%=16;
+    // if(i < 16) {
+        if(!fPositionsBuilt)BuildPositions();
+
         if(!smear)return CdTeWorldVectors[i];
         double zyr=gThRand().Uniform(-1,1);
         XYZVector smearvec(gThRand().Uniform(-2,2),CdTeZYsmear[i/4][0]*zyr,CdTeZYsmear[i/4][1]*zyr);
         return CdTeWorldVectors[i]+smearvec;
-    }
-    return XYZVector(0.0, 0.0, 0.0);
+    // }
+    // return XYZVector(0.0, 0.0, 0.0);
 }
 
 XYZVector HPGeWorldVectors[6]{
@@ -508,9 +540,9 @@ XYZVector HPGeSmearBasis[6][2]{
     {{0.566926716, -0.823768231, 0.0}, {0.214920560, 0.147910787, 0.965366020}}
 };
 
-void HPGeHit::BuildPos() const
+XYZVector HPGeHit::BuildPos(bool smear) const
 {
-    fBlurPos = PosStatic(true, Index(), &fPos);
+    return PosStatic(smear, Index());
 }
 
 Double_t HPGeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
@@ -518,10 +550,9 @@ Double_t HPGeHit::DopplerCorrectedEnergy(double angleRad, double beta) const
     return DopplerCorrectEnergy(Energy(), angleRad, beta);
 }
 
-XYZVector HPGeHit::PosStatic(bool smear,u_short i, XYZVector* pos) 
+XYZVector HPGeHit::PosStatic(bool smear,u_short i)
 {
     if(i < 6) {
-        if(pos != nullptr) {*pos = HPGeWorldVectors[i];}
         if(!smear)return HPGeWorldVectors[i];
 
         const double phi = gThRand().Uniform(0.0, 2.0 * kPi);

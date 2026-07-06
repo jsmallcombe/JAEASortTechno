@@ -105,10 +105,15 @@ DETECTOR CLASSES
   If command list include multiple .cal arguments the final one listed will be used.
 
   -vec CdTe x y z (mm)
-    Applies one XYZ position offset vector to CdTe detector classes.
+    Applies one XYZ position offset vector to focal point
+  -CdTeFace zy mm
+    Over-ride the distance between CdTe face and CdTe focal point (Default 30)
+  -CdTeAngle1/-CdTeAngle2/-CdTeAngle3/-CdTeAngle4 degrees
+    Over-ride the angles of the CdTe Quads (Defaults -65/-35/35/65)
+
   -vec S3 x y z (mm)
-    Applies one XYZ position offset vector to S3 detector classes.
-    The Z component is added to S3TargetDistance.
+    Applies one XYZ position offset vector to S3 detector.
+    The Z component is ADDED to S3TargetDistance (so either use delta-Z here or do not use S3TargetDistance).
 
   -S3FrontBackEnergy value
     S3 front/back energy matching tolerance.
@@ -146,8 +151,8 @@ i.e. not fundamental to event parsing of detector calses
       Angular correction assumes simple a 1/cos(theta) scaling.
     -BeamLoss MeV
       Energy loss in MeV for beam ion exiting target at from mean interaction position along Theta=180
-    -GammaOffset distance (mm)
-      Offset applied to gamma detector positions for opening-angle calculations.
+    -GammaOffset distance (ns)
+      Average time, in ns, before in-flight decay of target ion.
       Assuming a mean flight path along calculated target ion path before gamma decay.
     -BlurVectors
       Use blurred detector hit positions when calculating vectors.
