@@ -23,7 +23,7 @@ bool S3Det::fKeepShared = true;
 bool S3Det::fFlipPhi = false;
 
 double S3Det::fOffsetPhiCon = 0.5 * kPi;
-double S3Det::fOffsetPhiSet = -22.5 * kPi / 180.0;
+double S3Det::fOffsetPhiSet = 0;
 double S3Det::fOuterDiameter = 70.0;
 double S3Det::fInnerDiameter = 22.0;
 XYZVector S3Det::fOffset(0.0, 0.0, 0.0);

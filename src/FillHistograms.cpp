@@ -575,7 +575,7 @@ void FillHistograms(HistogramRefs& H, const BuiltEventView& event)
 
                 H.cdte_energy_S3_bg->Fill(cdteEnergy);
                 H.cdte_doppler_bg->Fill(dopplerEnergy);
-                H.cdte_ring_doppler_back->Fill(s3Ring, dopplerEnergy);
+                H.cdte_ring_doppler_bg->Fill(s3Ring, dopplerEnergy);
 
             }
         }//s3.cdte
