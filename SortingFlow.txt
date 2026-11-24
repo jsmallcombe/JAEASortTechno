@@ -1,0 +1,22 @@
+## Event building flow
+
+1. **Digitiser records are read and decoded.**  
+   `DigitiserBase::getNextEvent()` in [Digitisers.h](/home/js/OtherCodes/JAEASortTechno/include/Digitisers.h:81) reads each five-word record, swaps the bytes, and calls the concrete digitiser’s `decode()` method. Implementations such as `APV8104::decode()`, `APV8032::decode()`, and `APV8016A::decode()` fill an `Event` with its timestamp, module, channel, and ADC value. The base class applies any time offset and tracks timestamp disorder.
+
+2. **Events from all digitisers are collected into blocks.**  
+   `BuildEventsFromDigitisers()` in [BuildEventsFromDigitisers.h](/home/js/OtherCodes/JAEASortTechno/include/BuildEventsFromDigitisers.h:26) calls `FillSortedBlock()`. That function reads up to `CHUNK_SIZE` records per digitiser at a time, optionally fills raw ADC histograms, and stops at the requested block size, end of input, or `maxSortTs`.
+
+3. **Each block is sorted by timestamp.**  
+   `FillSortedBlock()` sorts its collected `Event` objects by `Event::ts`. The builder first fills the main buffer, then a producer thread alternates between two refill slots. The consumer merges each sorted refill into the remaining main buffer with `std::inplace_merge()`.
+
+4. **The consumer groups sorted hits into coincidence events.**  
+   The consumer loop in `BuildEventsFromDigitisers()` compares each hit’s timestamp to the previous hit. If `currentTs - lastTs < tdiff`, it appends the hit to the current event; otherwise, it writes the current event if it qualifies, then starts a new one. A backward timestamp triggers a reset and starts a new event.
+
+5. **A built event stores relative hit times and hit data.**  
+   `BuiltEvent::StartEvent()` and `BuiltEvent::AppendHit()` in [BuiltEvent.h](/home/js/OtherCodes/JAEASortTechno/include/BuiltEvent.h:99) populate parallel `Ts`, `Mod`, `Ch`, and `Adc` vectors. `Ts` is relative to the first hit; `Ts_l` retains absolute timestamps for diagnostics. `SafeTsDiff()` clamps relative times to the `UShort_t` range.
+
+6. **Trigger selection controls whether the event is written.**  
+   `BuiltEvent::SetTriggerModules()` and `BuiltEvent::IsTrigger()` in [BuiltEvent.h](/home/js/OtherCodes/JAEASortTechno/include/BuiltEvent.h:59) configure the trigger modules. `StartEvent()` checks the first hit, and `AppendHit()` can make the event qualify when a later hit comes from a trigger module. If no trigger modules are configured, every event qualifies.
+
+7. **The caller writes or forwards each qualifying event.**  
+   `ThreadedBinToTree()` in [ThreadedSort.cpp](/home/js/OtherCodes/JAEASortTechno/src/ThreadedSort.cpp:103) passes a callback that fills the ROOT tree. `MakeEventTreeAndHistogramsFromBin()` in the same file passes a callback that optionally fills the tree and moves the event into histogram chunks via `BuiltEventChunkBuffer::FillMove()` in [BuiltEvent.h](/home/js/OtherCodes/JAEASortTechno/include/BuiltEvent.h:170). The builder also writes the final qualifying event after input is exhausted.

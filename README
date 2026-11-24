@@ -20,7 +20,8 @@ GENERAL INPUT METHODS
   particle-ID gates / Graph inputs:
     -ID GateFile.root gate_id
     -GR GraphFile.root gate_id
-      loads the first TGraph inheriting object (inc TCutG) found in GateFile.root and associates it with gate_id.
+      loads the first TGraph inheriting object (inc TCutG) found in GateFile.root
+      and associates it with gate_id.
 
 DATA FILES INPUT / OUTPUT
   bin run input:
@@ -43,12 +44,27 @@ DATA FILES INPUT / OUTPUT
       Build histograms with automated filename /filepath/runprefix_hist.root
     -hist path/hist.root
       Build histograms with manual path/filename
-    NOTE: While options -tree and -h *can* be used together, due to reasons of root-file efficiency, it is about 30-50% faster to run the program sequentially. 
+    NOTE: While options -tree and -h *can* be used together, however,
+    due to root-file efficiency reasons, it is 30-50% faster to run the program sequentially.
   overwrite:
     -O / -o
       Enables overwrite mode for event tree and histogram outputs.
 
 EVENT BUILDING CONFIGURATION
+
+    A raw hit (or single event in the digitiser code) is one decoded record from a .bin file.
+    Raw hits are timestamp-sorted by the builder.
+    A coincidence event, or built event, is a group of raw hits that fall within the configured
+    coincidence window. This is what is written to the EventTree and passed to histogram filling.
+
+    Hits are read sequentially from each digitiser in batches of BinChunk hits. If a digitiser
+    is lagging behind the latest timestamp, additional batches are read from it to catch up.
+    Once the buffer reaches its BuildBuffer target, it is sorted by timestamp.
+    The earliest hits are grouped into coincidence events using Window.
+    As hits are consumed, the buffer is refilled and kept sorted.
+    Coincident hits that become split across batch reads should be united within the sorted buffer,
+    before event building, provided one chooses BuildBuffer large enough.
+
   Digitiser module order;
     -APV8104 zeroindex
     -APV8032 zeroindex
@@ -60,40 +76,60 @@ EVENT BUILDING CONFIGURATION
       Repeat for mutliple modules.
       When provided, only built events containing at least one hit from one of these module numbers are written.
       Only hits from these modules extend the build window after building a candidate event has started.
+      Default: no trigger modules; all built events pass the trigger selection.
   Digitiser timestamp offsets:
     -TOffN offset
       Applies `offset` to every timestamp read from module `N`.
       Example: `-TOff4 400`
       Offsets may be negative. Given in ns
       Applied before event building. Use cal file for small individual channel adjustments
+      Could cause issues with rollovers.
+      Default: 0 ns for every module.
   Time Sorting:
     -Window ns
-      Coincidence build window in ns for grouping hits into one built event.
+      Maximum allowed gap, in ns, between hits grouped into one coincidence event (built event).
+      The check is between the current hit and the last hit that extends the window, so a chain
+      of hits can span longer than Window in total. With TriggerModule configured, trigger hits
+      extend the current events window; other hits can be included but do not extend it.
+      Default: 2,000 ns.
+    -BuildBuffer N
+      Target number of raw hits buffered for event building from .bin input.
+      A larger buffer gives more lookahead for lagging or out-of-order hits.
+      Too small a buffer can leave hits out of order and cause Time Errors.
+      Default: 1,000,000 raw hits.
     -BinChunk N
-      Raw digitiser read chunk size used before local sorting.
-      BinChunk <<< BuildBuffer    Recommended 1-100
+      Number of raw hits read from one digitiser at a time.
+      This controls read-batch granularity, ensuring initial chunk-wise time ordering of buffer inputs.
+      Keep it much smaller than BuildBuffer; 1-100 is a typical range. Default: 50 hits.
     -Tolerance ns
-      Timestamp ordering tolerance forwarded to the digitiser readers.
+      Backward timestamp jump threshold used by each digitiser reader to identify and report
+      disorder. Given in ns; it does not set the coincidence window or replace buffer sorting.
+      Default: 100,000 ns.
     -MaxTs ticks
       Optional, maximum timestamp for raw digitiser sorting (experimental).
       Given in raw timestamp ticks to match timestamp disorder messages. 
       When globalMaxTs surpasses this value, digitiser buffer filling stops and final events are drained normally.
       Use for indivdual runs in which data became unusable at some mid-point.
+      Default: disabled (-1).
+    -RollOver
+      Enables correction for 2^44-tick hardware timestamp rollovers in raw digitiser input.
+      Disabled by default; corrected timestamps continue across each detected rollover.
 
 GENERAL HISTOGRAM SORTING
   -Workers N
     Number of histogram worker threads for tree->hist and chunk->hist stages.
-  -BuildBuffer N
-    Active event buffer size used by the built-event builder.
-    Too small may give Time Errors due to digitiser disorder
-    Default 1,000,000
+    Default: 4.
   -HistChunks N
-    Built-event count per histogram chunk in the direct bin->hist path.
+    Number of coincidence (built) events collected into each work chunk for histogram filling
+    in the direct .bin->hist path. This counts grouped events, not individual raw hits.
+    Default: 1,000 built events.
   -BasicHistograms 0|1
     When set non-zero, only the detector-class-free basic histograms are created and filled.
+    Default: 0 (disabled).
   -HistogramTimers 0|1
     Debugging option for sort speed.
     When set non-zero, prints total FillHistogramsBasic time plus four FillHistograms chunk timers.
+    Default: 0 (disabled).
 
 
 DETECTOR CLASSES
@@ -106,6 +142,7 @@ DETECTOR CLASSES
 
   -vec CdTe x y z (mm)
     Applies one XYZ position offset vector to focal point
+    Default: (0, 0, 0) mm.
   -CdTeFace zy mm
     Over-ride the distance between CdTe face and CdTe focal point (Default 30)
   -CdTeAngle1/-CdTeAngle2/-CdTeAngle3/-CdTeAngle4 degrees
@@ -113,23 +150,32 @@ DETECTOR CLASSES
 
   -vec S3 x y z (mm)
     Applies one XYZ position offset vector to S3 detector.
+    Default: (0, 0, 0) mm.
 
   -S3FrontBackEnergy value
     S3 front/back energy matching tolerance.
+    Default: 0.95.
   -S3FrontBackOffset value
     S3 front/back energy offset.
+    Default: 150.
   -S3FrontBackTime ns
     S3 front/back time matching tolerance.
+    Default: 30 ns.
   -S3PreferenceSector 0|1
     Prefer sector energy when building S3 pixels.
+    Default: 0 (disabled).
   -S3MultiHit 0|1
     Allow S3 multi-hit pixel building.
+    Default: 0 (disabled).
   -S3KeepShared 0|1
     Keep S3 pixels that share ring or sector hits.
+    Default: 1 (enabled).
   -S3FlipPhi 0|1
     Flip the S3 phi convention. i.e. Change which way the detector is facing
+    Default: 0 (disabled).
   -S3OffsetPhiSetDeg degrees
     S3 phi offset in degrees. Angle between the signal cable and Phi=0
+    Default: 0 degrees.
 
 HISTOGRAM SORT SPECIFIC OPTIONS
 Options only used in FillHistograms
@@ -141,18 +187,24 @@ i.e. not fundamental to event parsing of detector calses
       Used for generated kinematics and beta splines. Default 120.
     -BeamMass MeV/c^2
       Beam mass.
+      Default: 53,966.429 MeV/c^2.
     -TargetMass MeV/c^2
       Target mass.
+      Default: 221,742.905 MeV/c^2.
     -TargetLoss MeV
       Energy loss in MeV for target ion exiting target at from mean interaction position along Theta=0
       Angular correction assumes simple a 1/cos(theta) scaling.
+      Default: 6 MeV.
     -BeamLoss MeV
       Energy loss in MeV for beam ion exiting target at from mean interaction position along Theta=180
+      Default: 27.5 MeV.
     -GammaOffset distance (ns)
       Average time, in ns, before in-flight decay of target ion.
       Assuming a mean flight path along calculated target ion path before gamma decay.
+      Default: disabled; enabled by providing this option.
     -BlurVectors
       Use blurred detector hit positions when calculating vectors.
+      Default: disabled.
     -PixelCutE energy
       Minimum S3 pixel energy used to selected "good" events.
       i.e. scatterd beam not light particles. Default 5.

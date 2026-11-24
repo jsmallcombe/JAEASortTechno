@@ -30,6 +30,9 @@ protected:
 
     Long64_t lastTs = -1;
     Long64_t disorderCount = 0;
+    UShort_t rolloverCount = 0;
+    Long64_t rolloverOffset = 0;
+    Long64_t nextRolloverTs = gHardwareTimestampPeriod;
     int32_t timeOffset = 0;
 
     static Long64_t TS_TOLERANCE; // ns
@@ -105,8 +108,34 @@ public:
                 ev.ts += timeOffset;
             }
 
+            if (gEnableHardwareRollover && rolloverCount > 0) {
+                ev.ts += rolloverOffset;
+            }
+
             // --- Disorder check ---
             if (lastTs >= 0 && ev.ts < lastTs - TS_TOLERANCE) {
+
+                // A hardware wrap is a specific kind of backward jump: the
+                // previous time is near the next 2^44 boundary and raw time
+                // has returned near zero. Update cached values only on wrap.
+                if (gEnableHardwareRollover &&
+                    nextRolloverTs - lastTs >= 0 &&
+                    nextRolloverTs - lastTs < gHardwareRolloverMargin &&
+                    ev.ts - rolloverOffset >= 0 &&
+                    ev.ts - rolloverOffset < gHardwareRolloverMargin) {
+                    std::cout << "\n[ROLLOVER DETECTED] Digi " << mod
+                              << " prev=" << lastTs
+                              << " new=" << ev.ts
+                              << " dT=" << (ev.ts - lastTs)
+                              << std::endl;
+                    ++rolloverCount;
+                    rolloverOffset += gHardwareTimestampPeriod;
+                    nextRolloverTs += gHardwareTimestampPeriod;
+                    ev.ts += gHardwareTimestampPeriod;
+                    lastTs = ev.ts;
+                    disorderCount=0;
+                    return true;
+                }
 
                 disorderCount++;
 

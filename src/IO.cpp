@@ -463,6 +463,7 @@ bool JAEASortIO::ProcessInputs(){
     HistogramOutFilename = "";
     WriteEventTree = false;
     Overwrite = false;
+    gEnableHardwareRollover = false;
     
     string str;
     while(*this>>str){
@@ -630,6 +631,9 @@ void JAEASortIO::ProcessOption(TString str){
             }
         }else if(str.EqualTo("-o")){
             Overwrite = true;
+        }else if(str.EqualTo("-rollover")){
+            gEnableHardwareRollover = true;
+            std::cout << "Hardware timestamp rollover correction enabled" << std::endl;
         }else if(str.EqualTo("-apv8104")){
             *this>>APV8104::ModuleZeroIndex;
         }else if(str.EqualTo("-apv8032")){

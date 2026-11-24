@@ -4,6 +4,7 @@
 #include <algorithm>
 
 Long64_t DigitiserBase::TS_TOLERANCE = 100000; // ns
+bool gEnableHardwareRollover = false;
 
 int APV8104::ModuleZeroIndex=-1;
 int APV8032::ModuleZeroIndex=-1;
